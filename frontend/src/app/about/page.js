@@ -81,7 +81,7 @@ export default function About() {
                     <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-cyan-600 rounded-xl flex items-center justify-center ">
                       <Rocket className="h-6 w-6 text-white" />
                     </div>
-                    <div className="absolute -inset-2 bg-gradient-to-br from-purple-500/30 to-cyan-500/30 rounded-xl "></div>
+                    
                   </div>
                   <h2 className="text-3xl font-bold text-white">
                     Our <span className="gradient-text">Mission</span>
