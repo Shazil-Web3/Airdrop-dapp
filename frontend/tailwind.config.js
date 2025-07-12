@@ -73,15 +73,19 @@ export default {
         },
         float: {
           '0%, 100%': { 
+            opacity: '1',
             transform: 'translateY(0px) rotateX(0deg) rotateY(0deg) rotateZ(var(--initial-rotate, 0deg))' 
           },
           '25%': { 
+            opacity: '1',
             transform: 'translateY(-20px) rotateX(10deg) rotateY(5deg) rotateZ(calc(var(--initial-rotate, 0deg) + 5deg))' 
           },
           '50%': { 
+            opacity: '1',
             transform: 'translateY(-12px) rotateX(-5deg) rotateY(-8deg) rotateZ(calc(var(--initial-rotate, 0deg) - 8deg))' 
           },
           '75%': { 
+            opacity: '1',
             transform: 'translateY(-18px) rotateX(8deg) rotateY(12deg) rotateZ(calc(var(--initial-rotate, 0deg) + 12deg))' 
           },
         },

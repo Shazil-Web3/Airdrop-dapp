@@ -18,46 +18,46 @@ export const HeroSection = () => {
       <div className="absolute inset-0 pointer-events-none hidden sm:block">
         {/* Coin positions remain unchanged */}
         {/* Top Left */}
-        <div className="absolute top-20 left-8 lg:left-16 animate-float">
+        <div className="absolute top-20 left-8 lg:left-16 animate-float opacity-100" style={{ '--initial-rotate': '15deg' }}>
           <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full flex items-center justify-center transform hover-scale overflow-hidden" style={{ transform: "rotate3d(1, 1, 0, 35deg) rotateZ(15deg)" }}>
             <img src="/1.png" alt="Coin" className="w-full h-full object-cover rounded-full" />
           </div>
         </div>
 
-        <div className="absolute top-42 left-20 lg:left-32 animate-float" style={{ animationDelay: "0.8s" }}>
+        <div className="absolute top-42 left-20 lg:left-32 animate-float opacity-100" style={{ animationDelay: "0.8s", '--initial-rotate': '-20deg' }}>
           <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-full flex items-center justify-center hover-scale overflow-hidden" style={{ transform: "rotate3d(-1, 1, 0, 45deg) rotateZ(-20deg)" }}>
             <img src="/1.png" alt="Coin" className="w-full h-full object-cover rounded-full" />
           </div>
         </div>
 
         {/* Top Right */}
-        <div className="absolute top-16 right-12 lg:right-24 animate-float" style={{ animationDelay: "0.3s" }}>
+        <div className="absolute top-16 right-12 lg:right-24 animate-float opacity-100" style={{ animationDelay: "0.3s", '--initial-rotate': '-12deg' }}>
           <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full flex items-center justify-center hover-scale overflow-hidden" style={{ transform: "rotate3d(1, -1, 0, 40deg) rotateZ(-12deg)" }}>
             <img src="/1.png" alt="Coin" className="w-full h-full object-cover rounded-full" />
           </div>
         </div>
 
         {/* Middle */}
-        <div className="absolute top-1/2 left-4 lg:left-8 animate-float" style={{ animationDelay: "1.2s" }}>
+        <div className="absolute top-1/2 left-4 lg:left-8 animate-float opacity-100" style={{ animationDelay: "1.2s", '--initial-rotate': '8deg' }}>
           <div className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full flex items-center justify-center hover-scale overflow-hidden" style={{ transform: "rotate3d(0, 1, 1, 25deg) rotateZ(8deg)" }}>
             <img src="/1.png" alt="Coin" className="w-full h-full object-cover rounded-full" />
           </div>
         </div>
 
-        <div className="absolute top-1/3 right-8 lg:right-16 animate-float" style={{ animationDelay: "1.8s" }}>
+        <div className="absolute top-1/3 right-8 lg:right-16 animate-float opacity-100" style={{ animationDelay: "1.8s", '--initial-rotate': '22deg' }}>
           <div className="w-14 h-14 sm:w-18 sm:h-18 lg:w-22 lg:h-22 rounded-full flex items-center justify-center hover-scale overflow-hidden" style={{ transform: "rotate3d(1, 0, 1, 50deg) rotateZ(22deg)" }}>
             <img src="/1.png" alt="Coin" className="w-full h-full object-cover rounded-full" />
           </div>
         </div>
 
         {/* Bottom */}
-        <div className="absolute bottom-24 right-20 lg:right-40 animate-float" style={{ animationDelay: "1.5s" }}>
+        <div className="absolute bottom-24 right-20 lg:right-40 animate-float opacity-100" style={{ animationDelay: "1.5s", '--initial-rotate': '-18deg' }}>
           <div className="w-28 h-28 sm:w-32 sm:h-32 lg:w-36 lg:h-36 rounded-full flex items-center justify-center hover-scale overflow-hidden" style={{ transform: "rotate3d(1, -1, 0, 30deg) rotateZ(-18deg)" }}>
             <img src="/1.png" alt="Coin" className="w-full h-full object-cover rounded-full" />
           </div>
         </div>
 
-        <div className="absolute bottom-40 left-16 lg:left-28 animate-float" style={{ animationDelay: "2.2s" }}>
+        <div className="absolute bottom-40 left-16 lg:left-28 animate-float opacity-100" style={{ animationDelay: "2.2s", '--initial-rotate': '25deg' }}>
           <div className="w-18 h-18 sm:w-22 sm:h-22 lg:w-26 lg:h-26 rounded-full flex items-center justify-center hover-scale overflow-hidden" style={{ transform: "rotate3d(-1, 1, 1, 42deg) rotateZ(25deg)" }}>
             <img src="/1.png" alt="Coin" className="w-full h-full object-cover rounded-full" />
           </div>

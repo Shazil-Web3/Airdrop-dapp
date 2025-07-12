@@ -1,5 +1,4 @@
 import { Wallet, Users, Gift, CheckCircle } from "lucide-react";
-import Noise from './Noise';
 
 export const HowItWorksSection = () => {
   const steps = [
@@ -34,18 +33,15 @@ export const HowItWorksSection = () => {
   ];
 
   return (
-    <section id="how-it-works" className="relative overflow-hidden bg-slate-950">
-      {/* Noise Background */}
-      <div className="absolute inset-0 w-full h-full">
-        <Noise
-          patternSize={250}
-          patternScaleX={1}
-          patternScaleY={1}
-          patternRefreshInterval={2}
-          patternAlpha={15}
-        />
-      </div>
-      
+<section
+  id="how-it-works"
+  className="relative overflow-hidden bg-gradient-to-br from-[#000212] via-[#081427] via-25% via-[#0f1e3a] via-50% to-[#16233f]"
+>
+
+
+
+
+
       <div className="px-8 py-40 relative z-10">
         <div className="mx-auto max-w-6xl">
           <div className="text-center mb-16">

@@ -1,11 +1,10 @@
 "use client";
 import { ChevronDown } from "lucide-react";
-import { useState, useEffect } from "react";
-import MetallicPaint, { parseLogoImage } from "./MetallicPaint";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export const FAQSection = () => {
   const [openFAQ, setOpenFAQ] = useState(null);
-  const [imageData, setImageData] = useState(null);
 
   const faqs = [
     {
@@ -30,47 +29,8 @@ export const FAQSection = () => {
     }
   ];
 
-  useEffect(() => {
-    // Create a simple SVG for the metallic effect
-    const svgString = `
-      <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="50" cy="50" r="40" fill="black"/>
-        <text x="50" y="55" text-anchor="middle" fill="white" font-size="24" font-weight="bold">H</text>
-      </svg>
-    `;
-    
-    const blob = new Blob([svgString], { type: 'image/svg+xml' });
-    const file = new File([blob], "logo.svg", { type: 'image/svg+xml' });
-
-    async function loadDefaultImage() {
-      try {
-        const parsedData = await parseLogoImage(file);
-        setImageData(parsedData?.imageData ?? null);
-      } catch (err) {
-        console.error("Error loading default image:", err);
-      }
-    }
-
-    loadDefaultImage();
-  }, []);
-
   return (
     <section id="faq" className="px-6 py-20 bg-slate-900 relative overflow-hidden">
-      {/* Metallic Paint Icon in Upper Right Corner */}
-      <div className="absolute top-4 right-4 w-48 h-48 z-10">
-        <MetallicPaint 
-          imageData={imageData ?? new ImageData(1, 1)} 
-          params={{ 
-            edge: 2, 
-            patternBlur: 0.005, 
-            patternScale: 2, 
-            refraction: 0.015, 
-            speed: 0.3, 
-            liquid: 0.07 
-          }} 
-        />
-      </div>
-      
       <div className="mx-auto max-w-4xl relative z-10">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-6 lg:text-5xl text-white">
@@ -100,21 +60,43 @@ export const FAQSection = () => {
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div 
-                className="p-6 cursor-pointer flex items-center justify-between"
+                className="p-6 cursor-pointer flex items-center justify-between hover:bg-slate-700/50 transition-colors duration-200"
                 onClick={() => setOpenFAQ(openFAQ === index ? null : index)}
               >
                 <h3 className="text-lg font-semibold text-white">{faq.question}</h3>
-                <ChevronDown 
-                  className={`h-5 w-5 text-purple-400 transition-transform ${openFAQ === index ? 'rotate-180' : ''}`}
-                />
+                <motion.div
+                  animate={{ rotate: openFAQ === index ? 180 : 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                >
+                  <ChevronDown className="h-5 w-5 text-purple-400" />
+                </motion.div>
               </div>
-              {openFAQ === index && (
-                <div className="px-6 pb-6 pt-0">
-                  <p className="text-gray-400">
-                    {faq.answer}
-                  </p>
-                </div>
-              )}
+              <AnimatePresence>
+                {openFAQ === index && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ 
+                      duration: 0.4, 
+                      ease: "easeInOut",
+                      opacity: { duration: 0.3 }
+                    }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 pt-0">
+                      <motion.p 
+                        className="text-gray-400"
+                        initial={{ y: -10, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.1, duration: 0.3 }}
+                      >
+                        {faq.answer}
+                      </motion.p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ))}
         </div>
