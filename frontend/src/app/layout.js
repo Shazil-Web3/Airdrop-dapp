@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { LenisProvider } from "../components/LenisProvider.jsx";
+import { Providers } from "../components/Providers.jsx";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,9 +24,11 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden`}
       >
-        <LenisProvider>
-          {children}
-        </LenisProvider>
+        <Providers>
+          <LenisProvider>
+            {children}
+          </LenisProvider>
+        </Providers>
       </body>
     </html>
   );

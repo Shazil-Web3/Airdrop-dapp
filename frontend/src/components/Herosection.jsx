@@ -1,4 +1,5 @@
 import { Zap, ArrowRight, Coins, Sparkles, Star } from "lucide-react";
+import { CustomConnectButton } from './CustomConnectButton.jsx';
 
 export const HeroSection = () => {
   return (
@@ -85,9 +86,7 @@ export const HeroSection = () => {
             <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1 relative z-10" />
           </button>
 
-          <button className="w-full sm:w-auto border-2 border-purple-400/50 bg-white/5 backdrop-blur-sm hover:bg-purple-500/10 hover:border-purple-400 text-white px-6 py-3 text-base hover-scale font-semibold shadow-lg rounded-lg flex items-center justify-center transition-all duration-200">
-            Connect Wallet
-          </button>
+          <CustomConnectButton variant="hero" />
         </div>
 
         {/* Stats Section */}

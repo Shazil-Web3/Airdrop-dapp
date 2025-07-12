@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import { CustomConnectButton } from './CustomConnectButton.jsx';
 
 export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -48,27 +49,23 @@ export const Navbar = () => {
                         <Link href="/about" className="text-gray-300 hover:text-white transition-colors">
                             About
                         </Link>
+                        <Link href="/dashboard" className="text-gray-300 hover:text-white transition-colors">
+                            Dashboard
+                        </Link>
                         <button 
                           onClick={() => handleNavigation('features')} 
                           className="text-gray-300 hover:text-white transition-colors"
                         >
                             Features
                         </button>
-                        <button 
-                          onClick={() => handleNavigation('how-it-works')} 
-                          className="text-gray-300 hover:text-white transition-colors"
-                        >
-                            How It Works
-                        </button>
+                        
                         <button 
                           onClick={() => handleNavigation('faq')} 
                           className="text-gray-300 hover:text-white transition-colors"
                         >
                             FAQ
                         </button>
-                        <button className="bg-gradient-to-r from-purple-500 to-cyan-600 text-white font-semibold px-4 py-2 rounded-md hover:bg-indigo-700">
-                            Connect Wallet
-                        </button>
+                        <CustomConnectButton />
                     </div>
 
                     {/* Mobile Menu Button */}
@@ -88,6 +85,9 @@ export const Navbar = () => {
                     <div className="flex flex-col space-y-4">
                         <Link href="/about" className="text-gray-300 hover:text-white transition-colors">
                             About
+                        </Link>
+                        <Link href="/dashboard" className="text-gray-300 hover:text-white transition-colors">
+                            Dashboard
                         </Link>
                         <button 
                           onClick={() => {
@@ -116,9 +116,7 @@ export const Navbar = () => {
                         >
                             FAQ
                         </button>
-                        <button className="bg-gradient-to-r from-purple-500 to-cyan-600 text-white font-semibold w-full py-2 rounded-md hover:bg-indigo-700">
-                            Connect Wallet
-                        </button>
+                        <CustomConnectButton className="w-full" />
                     </div>
                 </div>
                 )}
