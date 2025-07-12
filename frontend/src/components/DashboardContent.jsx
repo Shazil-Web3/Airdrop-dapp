@@ -73,9 +73,11 @@ export const DashboardContent = () => {
     return (
       <section className="relative overflow-hidden px-4 sm:px-6 py-16 lg:py-24 min-h-screen flex items-center justify-center">
         {/* Darker Background Gradients */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-purple-950 to-black"></div>
-        <div className="absolute inset-0 bg-gradient-to-tr from-black via-transparent to-transparent opacity-80"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-black"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-700 via-purple-800 to-black"></div>
+<div className="absolute inset-0 bg-gradient-to-tr from-slate-700 via-transparent to-transparent opacity-40"></div>
+<div className="absolute inset-0 bg-gradient-to-b from-slate-700/30 to-black"></div>
+
+
 
         {/* Animated Background Circles */}
         <div className="absolute inset-0 overflow-hidden">

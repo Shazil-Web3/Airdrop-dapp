@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
   // Wallet Information
@@ -17,20 +16,7 @@ const userSchema = new mongoose.Schema({
     }
   },
   
-  // Connection Information
-  connectionTimestamps: [{
-    connectedAt: {
-      type: Date,
-      default: Date.now
-    },
-    disconnectedAt: {
-      type: Date
-    },
-    userAgent: String,
-    ipAddress: String
-  }],
-  
-  // Profile Information
+  // Basic Profile Information
   username: {
     type: String,
     trim: true,
@@ -43,6 +29,7 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     validate: {
       validator: function(v) {
+        if (!v) return true; // Allow empty
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
       },
       message: 'Invalid email format'
@@ -71,17 +58,10 @@ const userSchema = new mongoose.Schema({
     }
   },
   
-  referralLevel: {
-    type: Number,
-    default: 0,
-    min: 0,
-    max: 3
-  },
-  
   // Claim Information
   claimStatus: {
     type: String,
-    enum: ['not_claimed', 'claimed', 'partially_claimed'],
+    enum: ['not_claimed', 'claimed'],
     default: 'not_claimed'
   },
   
@@ -95,33 +75,8 @@ const userSchema = new mongoose.Schema({
     type: Date
   },
   
-  // Eligibility and Verification
-  isEligible: {
-    type: Boolean,
-    default: true
-  },
-  
-  isVerified: {
-    type: Boolean,
-    default: false
-  },
-  
-  verificationMethod: {
-    type: String,
-    enum: ['none', 'email', 'social', 'kyc'],
-    default: 'none'
-  },
-  
-  // Social Information
-  socialLinks: {
-    twitter: String,
-    telegram: String,
-    discord: String,
-    github: String
-  },
-  
-  // Activity Tracking
-  lastActivity: {
+  // Connection Information
+  lastConnectedAt: {
     type: Date,
     default: Date.now
   },
@@ -129,36 +84,6 @@ const userSchema = new mongoose.Schema({
   totalConnections: {
     type: Number,
     default: 0
-  },
-  
-  // Referral Statistics
-  referralStats: {
-    totalReferrals: {
-      type: Number,
-      default: 0
-    },
-    totalReferralRewards: {
-      type: Number,
-      default: 0
-    },
-    level1Referrals: {
-      type: Number,
-      default: 0
-    },
-    level2Referrals: {
-      type: Number,
-      default: 0
-    },
-    level3Referrals: {
-      type: Number,
-      default: 0
-    }
-  },
-  
-  // Metadata
-  metadata: {
-    type: Map,
-    of: String
   },
   
   // Timestamps
@@ -183,7 +108,6 @@ userSchema.index({ referralCode: 1 });
 userSchema.index({ referrerAddress: 1 });
 userSchema.index({ claimStatus: 1 });
 userSchema.index({ createdAt: -1 });
-userSchema.index({ lastActivity: -1 });
 
 // Virtual for referral link
 userSchema.virtual('referralLink').get(function() {
@@ -193,11 +117,6 @@ userSchema.virtual('referralLink').get(function() {
   return null;
 });
 
-// Virtual for total referral rewards earned
-userSchema.virtual('totalReferralRewardsEarned').get(function() {
-  return this.referralStats.totalReferralRewards;
-});
-
 // Pre-save middleware to generate referral code if not exists
 userSchema.pre('save', async function(next) {
   if (this.isNew && !this.referralCode) {
@@ -205,7 +124,7 @@ userSchema.pre('save', async function(next) {
   }
   
   // Update lastActivity
-  this.lastActivity = new Date();
+  this.updatedAt = new Date();
   
   next();
 });
@@ -221,45 +140,19 @@ userSchema.methods.generateReferralCode = function() {
 };
 
 // Method to record connection
-userSchema.methods.recordConnection = function(userAgent, ipAddress) {
-  this.connectionTimestamps.push({
-    connectedAt: new Date(),
-    userAgent,
-    ipAddress
-  });
+userSchema.methods.recordConnection = function() {
+  this.lastConnectedAt = new Date();
   this.totalConnections += 1;
-  this.lastActivity = new Date();
+  this.updatedAt = new Date();
   return this.save();
 };
 
-// Method to record disconnection
-userSchema.methods.recordDisconnection = function() {
-  if (this.connectionTimestamps.length > 0) {
-    const lastConnection = this.connectionTimestamps[this.connectionTimestamps.length - 1];
-    if (!lastConnection.disconnectedAt) {
-      lastConnection.disconnectedAt = new Date();
-    }
-  }
-  return this.save();
-};
-
-// Method to update referral stats
-userSchema.methods.updateReferralStats = function(level, rewardAmount = 0) {
-  this.referralStats.totalReferrals += 1;
-  this.referralStats.totalReferralRewards += rewardAmount;
-  
-  switch (level) {
-    case 1:
-      this.referralStats.level1Referrals += 1;
-      break;
-    case 2:
-      this.referralStats.level2Referrals += 1;
-      break;
-    case 3:
-      this.referralStats.level3Referrals += 1;
-      break;
-  }
-  
+// Method to update claim status
+userSchema.methods.updateClaimStatus = function(amount) {
+  this.claimStatus = 'claimed';
+  this.totalTokensClaimed = amount;
+  this.lastClaimDate = new Date();
+  this.updatedAt = new Date();
   return this.save();
 };
 
@@ -271,26 +164,6 @@ userSchema.statics.findByWalletAddress = function(walletAddress) {
 // Static method to find user by referral code
 userSchema.statics.findByReferralCode = function(referralCode) {
   return this.findOne({ referralCode: referralCode.toUpperCase() });
-};
-
-// Static method to get referral tree
-userSchema.statics.getReferralTree = function(walletAddress, maxLevel = 3) {
-  return this.aggregate([
-    {
-      $match: { walletAddress: walletAddress.toLowerCase() }
-    },
-    {
-      $graphLookup: {
-        from: 'users',
-        startWith: '$walletAddress',
-        connectFromField: 'walletAddress',
-        connectToField: 'referrerAddress',
-        as: 'referralTree',
-        maxDepth: maxLevel,
-        depthField: 'level'
-      }
-    }
-  ]);
 };
 
 module.exports = mongoose.model('User', userSchema); 
