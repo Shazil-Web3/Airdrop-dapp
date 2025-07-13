@@ -5,8 +5,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { CustomConnectButton } from './CustomConnectButton.jsx';
+import { useSyncWalletWithBackend } from '../hooks/useSyncWalletWithBackend';
 
 export const Navbar = () => {
+  useSyncWalletWithBackend();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();

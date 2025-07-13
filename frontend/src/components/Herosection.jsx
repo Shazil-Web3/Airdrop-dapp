@@ -1,7 +1,9 @@
 import { Zap, ArrowRight, Coins, Sparkles, Star } from "lucide-react";
 import { CustomConnectButton } from './CustomConnectButton.jsx';
+import { useSyncWalletWithBackend } from '../hooks/useSyncWalletWithBackend';
 
 export const HeroSection = () => {
+  useSyncWalletWithBackend();
   return (
     <section className="relative overflow-hidden px-4 sm:px-6 py-16 lg:py-24 min-h-screen flex items-center justify-center">
       {/* Background Gradients */}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Copy, 
   Check, 
@@ -18,43 +18,89 @@ import {
 } from "lucide-react";
 import { useAccount } from 'wagmi';
 import { CustomConnectButton } from './CustomConnectButton.jsx';
+import { useWallet } from '../hooks/useWallet';
+import apiService from '../lib/api';
 
 export const DashboardContent = () => {
   const { address, isConnected } = useAccount();
   const [copied, setCopied] = useState(false);
-  const [referralLink, setReferralLink] = useState('');
+  const hasSyncedRef = useRef(false);
+  
+  const {
+    user,
+    loading,
+    error,
+    activities,
+    referrals,
+    claims,
+    referralRewards,
+    referralChain,
+    connectWallet,
+    getReferralLink,
+    copyReferralLink,
+    refreshData,
+    loadUserData
+  } = useWallet();
 
-  // Mock data - replace with actual data from your backend
-  const userStats = {
-    claimedAmount: 1250,
-    totalReferrals: 47,
-    activeReferrals: 23,
-    pendingRewards: 340,
-    referralLevel: 2,
-    totalEarned: 2890
-  };
+  const referralLink = getReferralLink();
 
+  // Handle wallet connection
   useEffect(() => {
-    if (isConnected && address) {
-      // Generate referral link based on user's address
-      const baseUrl = window.location.origin;
-      const refLink = `${baseUrl}?ref=${address.slice(0, 8)}...${address.slice(-6)}`;
-      setReferralLink(refLink);
+    if (isConnected && address && !hasSyncedRef.current) {
+      hasSyncedRef.current = true;
+      // Extract referral code from URL if present
+      const urlParams = new URLSearchParams(window.location.search);
+      const referralCode = urlParams.get('ref');
+      
+      // Connect wallet to backend directly via API
+      const syncWalletWithBackend = async () => {
+        try {
+          const response = await apiService.connectWallet({
+            walletAddress: address,
+            ...(referralCode && { referralCode })
+          });
+          
+          // Refresh user data after successful connection
+          if (loadUserData) {
+            await loadUserData(address);
+          }
+        } catch (err) {
+          console.error('Failed to connect wallet to backend:', err);
+          hasSyncedRef.current = false; // Reset on error
+          // Even if connection fails, try to load existing user data
+          if (!user && loadUserData) {
+            try {
+              await loadUserData(address);
+            } catch (loadErr) {
+              console.error('Failed to load user data:', loadErr);
+            }
+          }
+        }
+      };
+
+      syncWalletWithBackend();
     }
-  }, [isConnected, address]);
+    
+    // Reset sync flag when wallet disconnects
+    if (!isConnected) {
+      hasSyncedRef.current = false;
+    }
+  }, [isConnected, address, user, loadUserData]);
 
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(referralLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      const success = await copyReferralLink();
+      if (success) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
     } catch (err) {
       console.error('Failed to copy: ', err);
     }
   };
 
   const shareReferralLink = async () => {
-    if (navigator.share) {
+    if (navigator.share && referralLink) {
       try {
         await navigator.share({
           title: 'Join Hivox Airdrop',
@@ -63,10 +109,21 @@ export const DashboardContent = () => {
         });
       } catch (err) {
         console.error('Error sharing:', err);
+        copyToClipboard();
       }
     } else {
       copyToClipboard();
     }
+  };
+
+  // Calculate user stats from real data
+  const userStats = {
+    claimedAmount: user?.totalTokensClaimed || 0,
+    totalReferrals: referrals.length,
+    activeReferrals: referrals.filter(ref => ref.status === 'active').length,
+    pendingRewards: referralRewards.total,
+    referralLevel: referralChain.length + 1,
+    totalEarned: (user?.totalTokensClaimed || 0) + referralRewards.total
   };
 
   if (!isConnected) {
@@ -96,6 +153,38 @@ export const DashboardContent = () => {
               Connect your wallet to access your Hivox dashboard and track your rewards in real-time.
             </p>
             <CustomConnectButton />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (loading) {
+    return (
+      <section className="relative overflow-hidden px-4 sm:px-6 py-16 lg:py-24 min-h-screen flex items-center justify-center">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-purple-950 to-black"></div>
+        <div className="relative z-10 text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-slate-300 text-lg">Loading your dashboard...</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="relative overflow-hidden px-4 sm:px-6 py-16 lg:py-24 min-h-screen flex items-center justify-center">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-purple-950 to-black"></div>
+        <div className="relative z-10 text-center">
+          <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-6 mb-4">
+            <p className="text-red-400 text-lg mb-4">Error loading dashboard</p>
+            <p className="text-slate-400 text-sm mb-4">{error}</p>
+            <button 
+              onClick={refreshData}
+              className="bg-gradient-to-r from-purple-500 to-cyan-600 text-white px-6 py-2 rounded-lg hover:from-purple-600 hover:to-cyan-700 transition-all duration-300"
+            >
+              Retry
+            </button>
           </div>
         </div>
       </section>
@@ -197,16 +286,33 @@ export const DashboardContent = () => {
             <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-600/30 mb-4">
               <div className="flex items-center justify-between">
                 <span className="text-slate-300 text-sm font-mono truncate flex-1 mr-3">
-                  {referralLink}
+                  {referralLink || (user?.referralCode ? `Referral Code: ${user.referralCode}` : 'Loading referral code...')}
                 </span>
                 <button
                   onClick={copyToClipboard}
                   className="flex-shrink-0 bg-gradient-to-r from-purple-500 to-cyan-600 hover:from-purple-600 hover:to-cyan-700 text-white p-2 rounded-lg transition-all duration-300 hover:scale-110 shadow-lg"
+                  disabled={!referralLink && !user?.referralCode}
                 >
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </button>
               </div>
             </div>
+            
+            {/* Referral Code Display */}
+            {user?.referralCode && (
+              <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-4 border border-slate-600/20 mb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-slate-400 text-xs font-medium uppercase tracking-wide">Your Referral Code</span>
+                    <div className="text-white font-mono text-lg font-bold mt-1">{user.referralCode}</div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-400 text-xs">Share this code</span>
+                    <div className="text-slate-300 text-sm mt-1">or use the link above</div>
+                  </div>
+                </div>
+              </div>
+            )}
             
             <button
               onClick={shareReferralLink}
@@ -258,7 +364,7 @@ export const DashboardContent = () => {
                   <span className="text-slate-300 text-base font-medium">Conversion Rate</span>
                 </div>
                 <span className="text-white font-bold text-lg">
-                  {Math.round((userStats.activeReferrals / userStats.totalReferrals) * 100)}%
+                  {userStats.totalReferrals > 0 ? Math.round((userStats.activeReferrals / userStats.totalReferrals) * 100) : 0}%
                 </span>
               </div>
             </div>
@@ -278,38 +384,48 @@ export const DashboardContent = () => {
               </div>
             </div>
             <div className="space-y-3">
-              {[
-                { type: 'referral', user: '0x1234...5678', amount: 50, time: '2 hours ago' },
-                { type: 'claim', user: 'You', amount: 1250, time: '1 day ago' },
-                { type: 'referral', user: '0xabcd...efgh', amount: 50, time: '3 days ago' },
-                { type: 'bonus', user: 'You', amount: 100, time: '1 week ago' }
-              ].map((activity, index) => (
-                <div key={index} className="group flex items-center justify-between p-4 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-600/30 hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02]">
-                  <div className="flex items-center">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center mr-4 shadow-lg ${
-                      activity.type === 'referral' ? 'bg-gradient-to-br from-green-500 to-emerald-500' :
-                      activity.type === 'claim' ? 'bg-gradient-to-br from-blue-500 to-cyan-500' :
-                      'bg-gradient-to-br from-purple-500 to-pink-500'
-                    }`}>
-                      {activity.type === 'referral' ? <Users className="h-5 w-5 text-white" /> :
-                       activity.type === 'claim' ? <Coins className="h-5 w-5 text-white" /> :
-                       <Gift className="h-5 w-5 text-white" />}
-                    </div>
-                    <div>
-                      <div className="text-white font-semibold text-base">
-                        {activity.type === 'referral' ? 'New Referral' :
-                         activity.type === 'claim' ? 'Airdrop Claimed' :
-                         'Bonus Earned'}
+              {activities.length > 0 ? (
+                activities.slice(0, 5).map((activity, index) => (
+                  <div key={activity.id || index} className="group flex items-center justify-between p-4 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-600/30 hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02]">
+                    <div className="flex items-center">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center mr-4 shadow-lg ${
+                        activity.activityType === 'referral_created' ? 'bg-gradient-to-br from-green-500 to-emerald-500' :
+                        activity.activityType === 'claim_submitted' ? 'bg-gradient-to-br from-blue-500 to-cyan-500' :
+                        activity.activityType === 'referral_reward' ? 'bg-gradient-to-br from-purple-500 to-pink-500' :
+                        'bg-gradient-to-br from-slate-500 to-gray-500'
+                      }`}>
+                        {activity.activityType === 'referral_created' ? <Users className="h-5 w-5 text-white" /> :
+                         activity.activityType === 'claim_submitted' ? <Coins className="h-5 w-5 text-white" /> :
+                         activity.activityType === 'referral_reward' ? <Gift className="h-5 w-5 text-white" /> :
+                         <TrendingUp className="h-5 w-5 text-white" />}
                       </div>
-                      <div className="text-slate-400 text-sm">{activity.user}</div>
+                      <div>
+                        <div className="text-white font-semibold text-base">
+                          {activity.activityType === 'referral_created' ? 'New Referral' :
+                           activity.activityType === 'claim_submitted' ? 'Airdrop Claimed' :
+                           activity.activityType === 'referral_reward' ? 'Referral Reward' :
+                           activity.activityType === 'wallet_connected' ? 'Wallet Connected' :
+                           'Activity'}
+                        </div>
+                        <div className="text-slate-400 text-sm">{activity.description}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-slate-400 text-sm">
+                        {new Date(activity.occurredAt || activity.createdAt).toLocaleDateString()}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-white font-bold text-lg">+{activity.amount.toLocaleString()} HIVOX</div>
-                    <div className="text-slate-400 text-sm">{activity.time}</div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <TrendingUp className="h-8 w-8 text-slate-400" />
                   </div>
+                  <p className="text-slate-400 text-lg">No activities yet</p>
+                  <p className="text-slate-500 text-sm">Your activities will appear here once you start using the platform</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>

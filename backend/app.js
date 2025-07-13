@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -12,9 +13,6 @@ const compression = require('compression');
 const userRoutes = require('./routes/users');
 const claimRoutes = require('./routes/claims');
 
-// Import config
-const config = require('./config/dotenv');
-
 const app = express();
 
 // Security middleware
@@ -22,20 +20,20 @@ app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-  origin: config.ALLOWED_ORIGINS,
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000'],
   credentials: true
 }));
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: config.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000, // 15 minutes
-  max: config.RATE_LIMIT_MAX_REQUESTS || 100, // limit each IP to 100 requests per windowMs
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.'
   }
 });
-app.use('/api/', limiter);
+// app.use('/api/', limiter); // Commented out to prevent rate limiting during development
 
 // Body parser middleware
 app.use(express.json({ limit: '10mb' }));
@@ -54,7 +52,7 @@ app.use(hpp());
 app.use(compression());
 
 // Logging middleware
-if (config.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 } else {
   app.use(morgan('combined'));
@@ -66,7 +64,7 @@ app.get('/health', (req, res) => {
     success: true,
     message: 'Server is running',
     timestamp: new Date().toISOString(),
-    environment: config.NODE_ENV
+    environment: process.env.NODE_ENV
   });
 });
 
@@ -117,7 +115,7 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({
     success: false,
     message: err.message || 'Internal Server Error',
-    ...(config.NODE_ENV === 'development' && { stack: err.stack })
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 });
 

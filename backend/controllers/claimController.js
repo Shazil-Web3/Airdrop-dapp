@@ -73,6 +73,9 @@ const submitClaim = async (req, res) => {
     // Update user claim status
     await user.updateClaimStatus(claimAmount);
 
+    // Distribute referral rewards
+    await distributeReferralRewards(user, claimAmount);
+
     // Record activity
     await Activity.create({
       user: user._id,
@@ -109,6 +112,45 @@ const submitClaim = async (req, res) => {
       message: 'Server error',
       error: error.message
     });
+  }
+};
+
+// Helper function to distribute referral rewards
+const distributeReferralRewards = async (user, claimAmount) => {
+  try {
+    const referralLevels = [
+      { level: 1, percentage: 10 }, // Level 1: 10%
+      { level: 2, percentage: 5 },  // Level 2: 5%
+      { level: 3, percentage: 2 }   // Level 3: 2%
+    ];
+
+    let currentReferrer = user.referrerAddress ? await User.findByWalletAddress(user.referrerAddress) : null;
+    
+    for (let i = 0; i < referralLevels.length && currentReferrer; i++) {
+      const { level, percentage } = referralLevels[i];
+      const rewardAmount = (claimAmount * percentage) / 100;
+      
+      // Add reward to referrer
+      await currentReferrer.addReferralReward(level, rewardAmount);
+
+      // Record activity for referrer
+      await Activity.create({
+        user: currentReferrer._id,
+        walletAddress: currentReferrer.walletAddress,
+        activityType: 'referral_reward',
+        description: `Level ${level} referral reward: ${rewardAmount} tokens from ${user.walletAddress}`,
+        transactionHash: `reward_${Date.now()}_${level}`
+      });
+
+      // Move to next level referrer
+      if (currentReferrer.referrerAddress) {
+        currentReferrer = await User.findByWalletAddress(currentReferrer.referrerAddress);
+      } else {
+        break;
+      }
+    }
+  } catch (error) {
+    console.error('Error distributing referral rewards:', error);
   }
 };
 

@@ -16,23 +16,11 @@ const validateWalletAddress = body('walletAddress')
   .matches(/^0x[a-fA-F0-9]{40}$/)
   .withMessage('Invalid wallet address format');
 
-const validateEmail = body('email')
-  .optional()
-  .isEmail()
-  .withMessage('Invalid email format');
-
-const validateUsername = body('username')
-  .optional()
-  .isLength({ min: 2, max: 50 })
-  .withMessage('Username must be between 2 and 50 characters');
-
 // @route   POST /api/users/connect-wallet
 // @desc    Connect wallet and create/update user profile
 // @access  Public
 router.post('/connect-wallet', [
-  validateWalletAddress,
-  validateEmail,
-  validateUsername
+  validateWalletAddress
 ], connectWallet);
 
 // @route   GET /api/users/profile/:walletAddress
@@ -43,10 +31,7 @@ router.get('/profile/:walletAddress', getUserProfile);
 // @route   PUT /api/users/profile/:walletAddress
 // @desc    Update user profile
 // @access  Public
-router.put('/profile/:walletAddress', [
-  validateEmail,
-  validateUsername
-], updateUserProfile);
+router.put('/profile/:walletAddress', updateUserProfile);
 
 // @route   GET /api/users/:walletAddress/activities
 // @desc    Get user activities
