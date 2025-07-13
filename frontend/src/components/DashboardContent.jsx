@@ -14,19 +14,42 @@ import {
   Trophy,
   Gift,
   Link as LinkIcon,
-  ExternalLink
+  ExternalLink,
+  Loader
 } from "lucide-react";
 import { useAccount } from 'wagmi';
 import { CustomConnectButton } from './CustomConnectButton.jsx';
 import { useWallet } from '../hooks/useWallet';
+import { useAirdrop } from '../context/RContext.jsx';
 import apiService from '../lib/api';
 import { ContractTestRunner } from './ContractTestRunner.jsx';
 import { AirdropFunder } from './AirdropFunder.jsx';
+import { SismoConnectButtonComponent } from './SismoConnectButton.jsx';
 
 export const DashboardContent = () => {
   const { address, isConnected } = useAccount();
   const [copied, setCopied] = useState(false);
   const hasSyncedRef = useRef(false);
+  
+  // Use the new AirdropContext
+  const {
+    account,
+    isPaused,
+    hasClaimed,
+    maxClaimPerUser,
+    startTime,
+    endTime,
+    contractBalance,
+    userTokenBalance,
+    isLoading,
+    isZKVerified,
+    zkVerifying,
+    claimAirdrop,
+    verifyZKProof,
+    canClaim,
+    getClaimableAmount,
+    loadContractState
+  } = useAirdrop();
   
   const {
     user,
@@ -119,6 +142,19 @@ export const DashboardContent = () => {
     }
   };
 
+  // Handle airdrop claim
+  const handleClaimAirdrop = async () => {
+    try {
+      await claimAirdrop();
+      // Refresh contract state after claiming
+      if (loadContractState) {
+        await loadContractState();
+      }
+    } catch (error) {
+      console.error('Claim failed:', error);
+    }
+  };
+
   // Calculate user stats from real data
   const userStats = {
     claimedAmount: user?.totalTokensClaimed || 0,
@@ -128,6 +164,9 @@ export const DashboardContent = () => {
     referralLevel: referralChain.length + 1,
     totalEarned: (user?.totalTokensClaimed || 0) + referralRewards.total
   };
+
+  // Get claimable amount from context
+  const claimableAmount = getClaimableAmount();
 
   if (!isConnected) {
     return (
@@ -337,26 +376,97 @@ export const DashboardContent = () => {
                 <p className="text-slate-400 text-sm">You can claim the following amount:</p>
               </div>
             </div>
-            <div className="flex items-center justify-between bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-600/30 mb-4">
-              <span className="text-3xl font-bold text-green-400">{user?.claimableAmount?.toLocaleString() || 0} HIVOX</span>
-              <span className="text-slate-400 text-sm">Airdrop Amount</span>
+            
+            {/* Contract Status */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-600/30">
+                <div className="text-sm text-slate-400 mb-1">Contract Balance</div>
+                <div className="text-lg font-bold text-white">{parseFloat(contractBalance || 0).toLocaleString()} HIVOX</div>
+              </div>
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-600/30">
+                <div className="text-sm text-slate-400 mb-1">Your Balance</div>
+                <div className="text-lg font-bold text-white">{parseFloat(userTokenBalance || 0).toLocaleString()} HIVOX</div>
+              </div>
             </div>
-            <button
-              onClick={async () => {
-                try {
-                  await submitClaim({ claimAmount: user?.claimableAmount });
-                } catch (e) {}
-              }}
-              className={`w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center shadow-lg hover:shadow-green-500/25 text-base ${user?.claimStatus === 'claimed' || !user?.claimableAmount ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={user?.claimStatus === 'claimed' || !user?.claimableAmount}
-            >
-              {user?.claimStatus === 'claimed' ? 'Airdrop Claimed' : loading ? 'Claiming...' : 'Claim Airdrop'}
-            </button>
-            {user?.claimStatus === 'claimed' && (
-              <div className="mt-4 text-green-400 text-center font-semibold">You have already claimed your airdrop.</div>
+            
+            <div className="flex items-center justify-between bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-600/30 mb-4">
+              <span className="text-3xl font-bold text-green-400">{claimableAmount.toLocaleString()} HIVOX</span>
+              <span className="text-slate-400 text-sm">Claimable Amount</span>
+            </div>
+            
+            {/* Status Messages */}
+            {hasClaimed && (
+              <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg">
+                <div className="text-green-400 text-sm font-semibold">✅ Airdrop Already Claimed</div>
+                <div className="text-green-300 text-xs">You have successfully claimed your airdrop tokens.</div>
+              </div>
             )}
-            {!user?.claimableAmount && (
-              <div className="mt-4 text-yellow-400 text-center font-semibold">No claimable airdrop available.</div>
+            
+            {!hasClaimed && !isZKVerified && (
+              <div className="mb-4 p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+                <div className="text-blue-400 text-sm font-semibold">🔐 ZK Verification Required</div>
+                <div className="text-blue-300 text-xs">Please verify your ZK proof before claiming your tokens.</div>
+              </div>
+            )}
+            
+            {!hasClaimed && isZKVerified && (
+              <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg">
+                <div className="text-green-400 text-sm font-semibold">✅ ZK Verification Complete</div>
+                <div className="text-green-300 text-xs">You can now claim your airdrop tokens.</div>
+              </div>
+            )}
+            
+            {isPaused && (
+              <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
+                <div className="text-red-400 text-sm font-semibold">⏸️ Airdrop Paused</div>
+                <div className="text-red-300 text-xs">The airdrop is currently paused by the admin.</div>
+              </div>
+            )}
+            
+            {parseFloat(contractBalance || 0) < 1000 && (
+              <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+                <div className="text-yellow-400 text-sm font-semibold">⚠️ Insufficient Contract Balance</div>
+                <div className="text-yellow-300 text-xs">The airdrop contract needs more tokens to function.</div>
+              </div>
+            )}
+            
+            {!hasClaimed && !isZKVerified ? (
+              <SismoConnectButtonComponent
+                onProofGenerated={async (zkProof) => {
+                  console.log("🔐 Sismo proof generated:", zkProof);
+                  // Store the proof for later use in claiming
+                  localStorage.setItem('sismoProof', JSON.stringify(zkProof));
+                }}
+                onVerificationComplete={async (zkProof) => {
+                  console.log("✅ Sismo verification completed");
+                  setIsZKVerified(true);
+                  toast.success("ZK verification successful! You can now claim your tokens.");
+                }}
+                disabled={isPaused}
+              />
+            ) : (
+              <button
+                onClick={handleClaimAirdrop}
+                disabled={hasClaimed || isPaused || !canClaim() || isLoading}
+                className={`w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center shadow-lg hover:shadow-green-500/25 text-base ${
+                  hasClaimed || isPaused || !canClaim() || isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader className="h-5 w-5 mr-2 animate-spin" />
+                    Claiming...
+                  </>
+                ) : hasClaimed ? (
+                  'Airdrop Claimed'
+                ) : isPaused ? (
+                  'Airdrop Paused'
+                ) : !canClaim() ? (
+                  'Cannot Claim'
+                ) : (
+                  'Claim Airdrop'
+                )}
+              </button>
             )}
           </div>
         </div>

@@ -5,7 +5,8 @@ const {
   getUserProfile,
   updateUserProfile,
   getUserActivities,
-  getUserReferrals
+  getUserReferrals,
+  fixReferralCodes
 } = require('../controllers/userController');
 
 const router = express.Router();
@@ -42,5 +43,10 @@ router.get('/:walletAddress/activities', getUserActivities);
 // @desc    Get user referrals
 // @access  Public
 router.get('/:walletAddress/referrals', getUserReferrals);
+
+// @route   POST /api/users/fix-referral-codes
+// @desc    Fix referral codes for all users (Admin utility)
+// @access  Public (for now, should be protected in production)
+router.post('/fix-referral-codes', fixReferralCodes);
 
 module.exports = router; 

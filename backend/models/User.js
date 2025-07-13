@@ -162,8 +162,11 @@ userSchema.virtual('totalReferralRewards').get(function() {
 
 // Pre-save middleware to generate referral code if not exists
 userSchema.pre('save', async function(next) {
-  if (this.isNew && !this.referralCode) {
+  // Generate referral code if user doesn't have one (for both new and existing users)
+  if (!this.referralCode) {
+    console.log('🔄 Backend: Generating referral code for user:', this.walletAddress);
     this.referralCode = await this.generateUniqueReferralCode();
+    console.log('✅ Backend: Generated referral code:', this.referralCode);
   }
   
   // Update lastActivity

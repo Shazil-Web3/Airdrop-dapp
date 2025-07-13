@@ -8,11 +8,8 @@ const { validationResult } = require('express-validator');
 // @access  Public
 const connectWallet = async (req, res) => {
   try {
-    console.log('🔄 Backend: connectWallet called with body:', req.body);
-    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.error('❌ Backend: Validation errors:', errors.array());
       return res.status(400).json({ 
         success: false, 
         errors: errors.array() 
@@ -24,17 +21,19 @@ const connectWallet = async (req, res) => {
       referralCode
     } = req.body;
 
-    console.log('📝 Backend: Processing wallet connection for:', {
-      walletAddress,
-      referralCode
-    });
-
     // Check if user already exists
     let user = await User.findByWalletAddress(walletAddress);
-    console.log('🔍 Backend: User lookup result:', user ? 'User found' : 'User not found');
 
     if (user) {
-      console.log('✅ Backend: Updating existing user');
+      // Check if user has a referral code, if not generate one
+      if (!user.referralCode) {
+        console.log('🔄 Backend: Generating referral code for existing user:', user.walletAddress);
+        user.referralCode = await user.generateUniqueReferralCode();
+        console.log('✅ Backend: Generated referral code for existing user:', user.referralCode);
+        // Save the user to persist the referral code
+        await user.save();
+      }
+      
       // Update existing user's connection
       await user.recordConnection();
       
@@ -46,7 +45,6 @@ const connectWallet = async (req, res) => {
         description: 'Wallet reconnected'
       });
 
-      console.log('✅ Backend: Existing user updated successfully');
       return res.status(200).json({
         success: true,
         message: 'Wallet reconnected successfully',
@@ -66,7 +64,6 @@ const connectWallet = async (req, res) => {
       });
     }
 
-    console.log('🆕 Backend: Creating new user');
     // Create new user
     const userData = {
       walletAddress: walletAddress.toLowerCase()
@@ -74,29 +71,21 @@ const connectWallet = async (req, res) => {
 
     // Handle referral if provided
     if (referralCode) {
-      console.log('🔗 Backend: Processing referral code:', referralCode);
       const referrer = await User.findByReferralCode(referralCode);
       if (referrer && referrer.walletAddress !== walletAddress.toLowerCase()) {
         userData.referrerAddress = referrer.walletAddress;
-        console.log('✅ Backend: Referrer found:', referrer.walletAddress);
-      } else {
-        console.log('⚠️ Backend: Invalid referral code or self-referral');
       }
     }
 
-    console.log('💾 Backend: Creating user with data:', userData);
     user = new User(userData);
     await user.recordConnection();
     await user.save();
-    console.log('✅ Backend: User saved successfully with ID:', user._id);
 
     // Build referral chain for multi-level tracking
     await user.buildReferralChain();
-    console.log('🔗 Backend: Referral chain built');
 
     // Create referral relationships and distribute rewards if applicable
     if (user.referrerAddress) {
-      console.log('🎁 Backend: Creating multi-level referrals');
       await createMultiLevelReferrals(user);
     }
 
@@ -107,9 +96,7 @@ const connectWallet = async (req, res) => {
       activityType: 'wallet_connected',
       description: 'New wallet connected'
     });
-    console.log('📝 Backend: Activity recorded');
 
-    console.log('✅ Backend: New user created successfully');
     res.status(201).json({
       success: true,
       message: 'Wallet connected successfully',
@@ -190,34 +177,25 @@ const createMultiLevelReferrals = async (newUser) => {
 const getUserProfile = async (req, res) => {
   try {
     const { walletAddress } = req.params;
-    console.log('🔍 Backend: getUserProfile called for wallet:', walletAddress);
 
     const user = await User.findByWalletAddress(walletAddress);
-    console.log('🔍 Backend: User lookup result:', user ? 'User found' : 'User not found');
     
     if (!user) {
-      console.log('❌ Backend: User not found for wallet:', walletAddress);
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
 
-    console.log('✅ Backend: User found, getting additional data...');
-
     // Get user's referrals
     const referrals = await Referral.getUserReferrals(walletAddress);
-    console.log('👥 Backend: Referrals loaded:', referrals.length);
     
     // Get user's recent activities
     const recentActivities = await Activity.getUserActivities(walletAddress, { limit: 10 });
-    console.log('📈 Backend: Activities loaded:', recentActivities.length);
 
     // Get referral tree
     const referralTree = await User.getReferralTree(walletAddress);
-    console.log('🌳 Backend: Referral tree loaded');
 
-    console.log('✅ Backend: getUserProfile completed successfully');
     res.status(200).json({
       success: true,
       data: {
@@ -383,10 +361,67 @@ const getUserReferrals = async (req, res) => {
   }
 };
 
+// @desc    Fix users without referral codes (utility function)
+// @route   POST /api/users/fix-referral-codes
+// @access  Public (Admin only)
+const fixReferralCodes = async (req, res) => {
+  try {
+    console.log('🔧 Backend: Starting referral code fix for all users');
+    
+    // Find all users without referral codes
+    const usersWithoutCodes = await User.find({ 
+      $or: [
+        { referralCode: { $exists: false } },
+        { referralCode: null },
+        { referralCode: "" }
+      ]
+    });
+    console.log(`🔍 Backend: Found ${usersWithoutCodes.length} users without referral codes`);
+    
+    let fixedCount = 0;
+    let errorCount = 0;
+    
+    for (const user of usersWithoutCodes) {
+      try {
+        if (!user.referralCode) {
+          user.referralCode = await user.generateUniqueReferralCode();
+          await user.save();
+          console.log(`✅ Backend: Fixed referral code for user ${user.walletAddress}: ${user.referralCode}`);
+          fixedCount++;
+        }
+      } catch (error) {
+        console.error(`❌ Backend: Error fixing referral code for user ${user.walletAddress}:`, error.message);
+        errorCount++;
+      }
+    }
+    
+    console.log(`🎉 Backend: Referral code fix completed. Fixed: ${fixedCount}, Errors: ${errorCount}`);
+    
+    res.status(200).json({
+      success: true,
+      message: 'Referral codes fixed successfully',
+      data: {
+        totalUsers: usersWithoutCodes.length,
+        fixedCount,
+        errorCount
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Backend: Error fixing referral codes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   connectWallet,
   getUserProfile,
   updateUserProfile,
   getUserActivities,
-  getUserReferrals
+  getUserReferrals,
+  fixReferralCodes
 }; 

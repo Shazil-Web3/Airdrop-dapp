@@ -77,6 +77,13 @@ class ApiService {
   async getClaimByTransaction(transactionHash) {
     return this.request(`/claims/transaction/${transactionHash}`);
   }
+
+  // Utility functions
+  async fixReferralCodes() {
+    return this.request('/users/fix-referral-codes', {
+      method: 'POST',
+    });
+  }
 }
 
 // Create a singleton instance

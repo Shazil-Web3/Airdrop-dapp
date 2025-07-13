@@ -5,6 +5,9 @@ import { getDefaultConfig, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { mainnet, sepolia } from 'wagmi/chains';
+import { AirdropProvider } from '../context/RContext.jsx';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // RainbowKit wagmi config
 const config = getDefaultConfig({
@@ -21,7 +24,21 @@ export function Providers({ children }) {
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider>
-          {children}
+          <AirdropProvider>
+            {children}
+            <ToastContainer
+              position="top-right"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="dark"
+            />
+          </AirdropProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

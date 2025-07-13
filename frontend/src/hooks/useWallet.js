@@ -180,8 +180,14 @@ export const useWallet = () => {
 
   // Get referral link
   const getReferralLink = useCallback(() => {
-    if (!user?.referralCode) return null;
-    return `${window.location.origin}?ref=${user.referralCode}`;
+    console.log('🔗 Frontend: Getting referral link for user:', user);
+    if (!user?.referralCode) {
+      console.log('❌ Frontend: No referral code found for user');
+      return null;
+    }
+    const link = `${window.location.origin}?ref=${user.referralCode}`;
+    console.log('✅ Frontend: Generated referral link:', link);
+    return link;
   }, [user]);
 
   // Copy referral link to clipboard

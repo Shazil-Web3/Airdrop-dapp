@@ -4,13 +4,13 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface ISysmoVerifier {
-    function verifyProof(address user, bytes calldata zkProof) external view returns (bool);
+interface ISismoVerifier {
+    function verifyProof(bytes memory zkProof) external view returns (address user);
 }
 
 contract HivoxAirdrop is Ownable {
     IERC20 public hivxToken;
-    ISysmoVerifier public verifier;
+    ISismoVerifier public verifier;
 
     uint256 public startTime;
     uint256 public endTime;
@@ -34,7 +34,7 @@ contract HivoxAirdrop is Ownable {
         uint256 _maxClaimPerUser
     ) {
         hivxToken = IERC20(_token);
-        verifier = ISysmoVerifier(_verifier);
+        verifier = ISismoVerifier(_verifier);
         startTime = _startTime;
         endTime = _endTime;
         maxClaimPerUser = _maxClaimPerUser;
@@ -48,7 +48,10 @@ contract HivoxAirdrop is Ownable {
     function claimAirdrop(address _referrer, bytes calldata zkProof) external whenNotPaused {
         require(block.timestamp >= startTime && block.timestamp <= endTime, "Outside claim period");
         require(!hasClaimed[msg.sender], "Already claimed");
-        require(verifier.verifyProof(msg.sender, zkProof), "ZK Proof failed");
+        
+        // Use Sismo verifier to verify the ZK proof
+        address verifiedUser = verifier.verifyProof(zkProof);
+        require(verifiedUser == msg.sender, "Invalid ZK proof");
 
         hasClaimed[msg.sender] = true;
 
@@ -87,7 +90,7 @@ contract HivoxAirdrop is Ownable {
     }
 
     function updateVerifier(address _verifier) external onlyOwner {
-        verifier = ISysmoVerifier(_verifier);
+        verifier = ISismoVerifier(_verifier);
     }
 
     function updateReferralPercentages(uint256[] calldata _percentages) external onlyOwner {
