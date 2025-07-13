@@ -20,6 +20,8 @@ import { useAccount } from 'wagmi';
 import { CustomConnectButton } from './CustomConnectButton.jsx';
 import { useWallet } from '../hooks/useWallet';
 import apiService from '../lib/api';
+import { ContractTestRunner } from './ContractTestRunner.jsx';
+import { AirdropFunder } from './AirdropFunder.jsx';
 
 export const DashboardContent = () => {
   const { address, isConnected } = useAccount();
@@ -39,7 +41,8 @@ export const DashboardContent = () => {
     getReferralLink,
     copyReferralLink,
     refreshData,
-    loadUserData
+    loadUserData,
+    submitClaim
   } = useWallet();
 
   const referralLink = getReferralLink();
@@ -323,51 +326,38 @@ export const DashboardContent = () => {
             </button>
           </div>
 
-          {/* Referral Stats */}
-          <div className="group animate-fade-in bg-gradient-to-br from-slate-900/90 to-slate-800/70 backdrop-blur-xl rounded-2xl p-8 border border-slate-700/50 shadow-2xl hover:shadow-cyan-500/10 transition-all duration-500 hover:border-cyan-500/30" style={{ animationDelay: "0.5s" }}>
+          {/* Claim Airdrop Section */}
+          <div className="group animate-fade-in bg-gradient-to-br from-slate-900/90 to-slate-800/70 backdrop-blur-xl rounded-2xl p-8 border border-slate-700/50 shadow-2xl hover:shadow-green-500/10 transition-all duration-500 hover:border-green-500/30" style={{ animationDelay: "0.5s" }}>
             <div className="flex items-center mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mr-4 shadow-lg">
-                <Trophy className="h-6 w-6 text-white" />
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mr-4 shadow-lg">
+                <Coins className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white mb-1">Referral Stats</h2>
-                <p className="text-slate-400 text-sm">Your referral performance and achievements</p>
+                <h2 className="text-2xl font-bold text-white mb-1">Claim Your Airdrop</h2>
+                <p className="text-slate-400 text-sm">You can claim the following amount:</p>
               </div>
             </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-600/30 hover:border-cyan-500/30 transition-all duration-300">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center mr-3 shadow-lg">
-                    <Star className="h-5 w-5 text-white" />
-                  </div>
-                  <span className="text-slate-300 text-base font-medium">Referral Level</span>
-                </div>
-                <span className="text-white font-bold text-lg">Level {userStats.referralLevel}</span>
-              </div>
-              
-              <div className="flex items-center justify-between p-4 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-600/30 hover:border-green-500/30 transition-all duration-300">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mr-3 shadow-lg">
-                    <Coins className="h-5 w-5 text-white" />
-                  </div>
-                  <span className="text-slate-300 text-base font-medium">Total Earned</span>
-                </div>
-                <span className="text-white font-bold text-lg">{userStats.totalEarned.toLocaleString()} HIVOX</span>
-              </div>
-              
-              <div className="flex items-center justify-between p-4 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-600/30 hover:border-blue-500/30 transition-all duration-300">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mr-3 shadow-lg">
-                    <Users className="h-5 w-5 text-white" />
-                  </div>
-                  <span className="text-slate-300 text-base font-medium">Conversion Rate</span>
-                </div>
-                <span className="text-white font-bold text-lg">
-                  {userStats.totalReferrals > 0 ? Math.round((userStats.activeReferrals / userStats.totalReferrals) * 100) : 0}%
-                </span>
-              </div>
+            <div className="flex items-center justify-between bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-600/30 mb-4">
+              <span className="text-3xl font-bold text-green-400">{user?.claimableAmount?.toLocaleString() || 0} HIVOX</span>
+              <span className="text-slate-400 text-sm">Airdrop Amount</span>
             </div>
+            <button
+              onClick={async () => {
+                try {
+                  await submitClaim({ claimAmount: user?.claimableAmount });
+                } catch (e) {}
+              }}
+              className={`w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center shadow-lg hover:shadow-green-500/25 text-base ${user?.claimStatus === 'claimed' || !user?.claimableAmount ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={user?.claimStatus === 'claimed' || !user?.claimableAmount}
+            >
+              {user?.claimStatus === 'claimed' ? 'Airdrop Claimed' : loading ? 'Claiming...' : 'Claim Airdrop'}
+            </button>
+            {user?.claimStatus === 'claimed' && (
+              <div className="mt-4 text-green-400 text-center font-semibold">You have already claimed your airdrop.</div>
+            )}
+            {!user?.claimableAmount && (
+              <div className="mt-4 text-yellow-400 text-center font-semibold">No claimable airdrop available.</div>
+            )}
           </div>
         </div>
 
@@ -428,6 +418,16 @@ export const DashboardContent = () => {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Contract Tests */}
+        <div className="animate-fade-in mt-8" style={{ animationDelay: "0.7s" }}>
+          <ContractTestRunner />
+        </div>
+
+        {/* Airdrop Funder */}
+        <div className="animate-fade-in mt-8" style={{ animationDelay: "0.8s" }}>
+          <AirdropFunder />
         </div>
       </div>
     </section>

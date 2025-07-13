@@ -1,9 +1,11 @@
 import { Zap, ArrowRight, Coins, Sparkles, Star } from "lucide-react";
 import { CustomConnectButton } from './CustomConnectButton.jsx';
 import { useSyncWalletWithBackend } from '../hooks/useSyncWalletWithBackend';
+import { useRouter } from 'next/navigation';
 
 export const HeroSection = () => {
   useSyncWalletWithBackend();
+  const router = useRouter();
   return (
     <section className="relative overflow-hidden px-4 sm:px-6 py-16 lg:py-24 min-h-screen flex items-center justify-center">
       {/* Background Gradients */}
@@ -82,7 +84,10 @@ export const HeroSection = () => {
 
         {/* Responsive Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-10 px-4">
-          <button className="group relative w-full sm:w-auto bg-gradient-to-r from-purple-600 via-blue-500 to-cyan-400 hover:from-purple-700 hover:via-blue-600 hover:to-cyan-500 text-white font-semibold px-6 py-3 text-base neon-glow hover-scale shadow-xl overflow-hidden rounded-lg flex items-center justify-center transition-all duration-200">
+          <button 
+            className="group relative w-full sm:w-auto bg-gradient-to-r from-purple-600 via-blue-500 to-cyan-400 hover:from-purple-700 hover:via-blue-600 hover:to-cyan-500 text-white font-semibold px-6 py-3 text-base neon-glow hover-scale shadow-xl overflow-hidden rounded-lg flex items-center justify-center transition-all duration-200"
+            onClick={() => router.push('/dashboard')}
+          >
             <Coins className="mr-2 h-5 w-5 relative z-10" />
             <span className="relative z-10 whitespace-nowrap">Claim Your Hivox Airdrop</span>
             <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1 relative z-10" />
