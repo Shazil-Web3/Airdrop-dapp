@@ -1,4 +1,4 @@
-import { Users, Trophy, Star, Target } from "lucide-react";
+import { Users, Target } from "lucide-react";
 
 export const ReferralSection = () => {
   const referralTiers = [
@@ -17,40 +17,30 @@ export const ReferralSection = () => {
       icon: Target,
       description: "Earn 8% from referrals made by your direct referrals",
       color: "from-primary to-purple-500"
-    },
-    {
-      level: 3,
-      title: "Third Level",
-      percentage: "3%",
-      icon: Trophy,
-      description: "Earn 3% from the third level of your referral network",
-      color: "from-purple-500 to-pink-500"
     }
   ];
 
   return (
     <section className="px-6 py-20 bg-slate-900 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none z-0">
-  {/* Middle Right Orb – Cyan, darker */}
-  <div className="absolute top-1/2 right-[-12rem] w-[20rem] h-[20rem] bg-[radial-gradient(circle,_rgba(34,211,238,0.12)_0%,_transparent_70%)] -translate-y-1/2" />
+        {/* Middle Right Orb – Cyan, darker */}
+        <div className="absolute top-1/2 right-[-12rem] w-[20rem] h-[20rem] bg-[radial-gradient(circle,_rgba(34,211,238,0.12)_0%,_transparent_70%)] -translate-y-1/2" />
+        
+        {/* Middle Left Orb – Purple, darker */}
+        <div className="absolute top-[25%] left-[-12rem] w-[20rem] h-[20rem] bg-[radial-gradient(circle,_rgba(168,85,247,0.12)_0%,_transparent_70%)] -translate-y-1/2" />
+      </div>
 
-  {/* Middle Left Orb – Purple, darker */}
-  <div className="absolute top-[25%] left-[-12rem] w-[20rem] h-[20rem] bg-[radial-gradient(circle,_rgba(168,85,247,0.12)_0%,_transparent_70%)] -translate-y-1/2" />
-
-</div>
-
-      
       <div className="mx-auto max-w-6xl relative z-10">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-6 lg:text-5xl text-white">
             <span className="text-purple-400">Referral Rewards</span> System
           </h2>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            Build your network and earn from multiple levels. The more you grow, the more you earn.
+            Build your network and earn from two levels. The more you grow, the more you earn.
           </p>
         </div>
         
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           {referralTiers.map((tier, index) => {
             const IconComponent = tier.icon;
             return (
@@ -87,8 +77,6 @@ export const ReferralSection = () => {
             <div className="h-2 w-2 rounded-full bg-cyan-400"></div>
             <div className="h-px w-16 bg-gradient-to-r from-cyan-400 to-purple-500"></div>
             <div className="h-2 w-2 rounded-full bg-purple-500"></div>
-            <div className="h-px w-16 bg-gradient-to-r from-purple-500 to-pink-500"></div>
-            <div className="h-2 w-2 rounded-full bg-pink-500"></div>
           </div>
         </div>
       </div>

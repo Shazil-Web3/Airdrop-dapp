@@ -3,7 +3,7 @@ import tokenABI from '../context/token.json';
 
 // Contract addresses
 const TOKEN_CONTRACT_ADDRESS = "0xC9baEB94eEF9D702291936bfAcFB601A1A6eFcB5";
-const AIRDROP_CONTRACT_ADDRESS = "0x248F0Ba44C031F9943215F0BF60F95A7d0Cf202E";
+const AIRDROP_CONTRACT_ADDRESS = "0x99ac93C47c39A59D53bbe77010C6621d7Dd5d88e";
 
 // Amount to fund (1000 tokens)
 const FUND_AMOUNT = ethers.parseEther("1000"); // 1000 tokens in wei

@@ -19,9 +19,7 @@ export const AirdropProvider = ({ children }) => {
     const [isPaused, setIsPaused] = useState(false);
     const [hasClaimed, setHasClaimed] = useState(false);
     const [maxClaimPerUser, setMaxClaimPerUser] = useState(0);
-    const [startTime, setStartTime] = useState(0);
     const [endTime, setEndTime] = useState(0);
-    const [referralPercentages, setReferralPercentages] = useState([]);
     const [referrer, setReferrer] = useState(null);
     const [contractBalance, setContractBalance] = useState(0);
     const [userTokenBalance, setUserTokenBalance] = useState(0);
@@ -116,7 +114,6 @@ export const AirdropProvider = ({ children }) => {
             // Fetch airdrop contract state
             const paused = await airdropInstance.paused();
             const maxClaim = await airdropInstance.maxClaimPerUser();
-            const start = await airdropInstance.startTime();
             const end = await airdropInstance.endTime();
             const claimed = await airdropInstance.hasClaimed(userAddress);
 
@@ -124,7 +121,6 @@ export const AirdropProvider = ({ children }) => {
                 userAddress,
                 paused,
                 maxClaim: ethers.formatEther(maxClaim),
-                startTime: Number(start),
                 endTime: Number(end),
                 hasClaimed: claimed
             });
@@ -135,7 +131,6 @@ export const AirdropProvider = ({ children }) => {
 
             setIsPaused(paused);
             setMaxClaimPerUser(ethers.formatEther(maxClaim));
-            setStartTime(Number(start));
             setEndTime(Number(end));
             setHasClaimed(claimed);
             setContractBalance(ethers.formatEther(contractBalance));
@@ -144,16 +139,16 @@ export const AirdropProvider = ({ children }) => {
             // Fetch referral percentages (if available)
             try {
                 const refPercentages = await airdropInstance.getReferralPercentages();
-                setReferralPercentages(refPercentages.map(Number));
+                // setReferralPercentages(refPercentages.map(Number)); // Removed as per edit
             } catch (error) {
                 // If getter doesn't exist, try to read public array
                 try {
-                    const refPercentages = [
-                        await airdropInstance.referralPercentages(0),
-                        await airdropInstance.referralPercentages(1),
-                        await airdropInstance.referralPercentages(2)
-                    ];
-                    setReferralPercentages(refPercentages.map(Number));
+                    // const refPercentages = [ // Removed as per edit
+                    //     await airdropInstance.referralPercentages(0),
+                    //     await airdropInstance.referralPercentages(1),
+                    //     await airdropInstance.referralPercentages(2)
+                    // ];
+                    // setReferralPercentages(refPercentages.map(Number)); // Removed as per edit
                 } catch (e) {
                     console.log("Could not fetch referral percentages");
                 }
@@ -233,19 +228,71 @@ export const AirdropProvider = ({ children }) => {
     };
 
     // Claim airdrop
-    const claimAirdrop = async (referrerAddress = null) => {
-        if (!airdropContract || !signer) {
-            toast.error("Please connect your wallet");
+    const claimAirdrop = async () => {
+        console.log("[claimAirdrop] Called");
+        if (!window.ethereum) {
+            toast.error("No Ethereum provider found. Please install MetaMask or another Web3 wallet.");
+            console.error("[claimAirdrop] window.ethereum is not available");
+            return;
+        }
+        if (!airdropContract) {
+            toast.error("Airdrop contract is not initialized");
+            console.error("[claimAirdrop] airdropContract is null");
+            return;
+        }
+        if (!signer) {
+            toast.error("Wallet signer is not initialized");
+            console.error("[claimAirdrop] signer is null");
+            return;
+        }
+        if (!tokenContract) {
+            toast.error("Token contract is not initialized");
+            console.error("[claimAirdrop] tokenContract is null");
+            return;
+        }
+        if (!contractAddresses) {
+            toast.error("Contract addresses are not loaded");
+            console.error("[claimAirdrop] contractAddresses is null");
+            return;
+        }
+
+        // Check endTime before attempting to claim
+        let endTimeValue;
+        try {
+            endTimeValue = await airdropContract.endTime();
+            const now = Math.floor(Date.now() / 1000);
+            if (now > Number(endTimeValue)) {
+                toast.error("Airdrop has ended");
+                console.error("[claimAirdrop] Airdrop has ended. endTime:", Number(endTimeValue), "now:", now);
+                return;
+            }
+        } catch (err) {
+            toast.error("Failed to fetch airdrop end time");
+            console.error("[claimAirdrop] Error fetching endTime:", err);
             return;
         }
 
         // Force refresh claim status before attempting to claim
-        const userAddress = await signer.getAddress();
-        console.log("🎯 Attempting claim for address:", userAddress);
+        let userAddress;
+        try {
+            userAddress = await signer.getAddress();
+            console.log("[claimAirdrop] User address:", userAddress);
+        } catch (err) {
+            toast.error("Failed to get user address from signer");
+            console.error("[claimAirdrop] Error getting user address:", err);
+            return;
+        }
         
         // Check claim status directly from contract
-        const alreadyClaimed = await airdropContract.hasClaimed(userAddress);
-        console.log("🔍 Direct contract check - hasClaimed:", alreadyClaimed);
+        let alreadyClaimed;
+        try {
+            alreadyClaimed = await airdropContract.hasClaimed(userAddress);
+            console.log("[claimAirdrop] Direct contract check - hasClaimed:", alreadyClaimed);
+        } catch (err) {
+            toast.error("Failed to check claim status from contract");
+            console.error("[claimAirdrop] Error checking hasClaimed:", err);
+            return;
+        }
         
         if (alreadyClaimed) {
             toast.error("You have already claimed your airdrop");
@@ -254,12 +301,13 @@ export const AirdropProvider = ({ children }) => {
         }
 
         if (hasClaimed) {
-            toast.error("You have already claimed your airdrop");
+            toast.error("You have already claimed your airdrop (state cache)");
             return;
         }
 
         if (isPaused) {
             toast.error("Airdrop is currently paused");
+            console.error("[claimAirdrop] Contract is paused");
             return;
         }
 
@@ -267,9 +315,10 @@ export const AirdropProvider = ({ children }) => {
 
         try {
             const claimAmount = 100; // Fixed amount of 100 tokens
-            const referrer = referrerAddress || ethers.ZeroAddress;
+            // No referrer logic, always use zero address
+            const referrer = ethers.ZeroAddress;
 
-            console.log("🚀 Preparing to claim airdrop:", {
+            console.log("[claimAirdrop] Preparing to claim airdrop:", {
                 userAddress,
                 claimAmount,
                 referrer,
@@ -277,30 +326,81 @@ export const AirdropProvider = ({ children }) => {
                 contractAddress: airdropContract.target
             });
 
-            // Check contract balance
-            const contractBalance = await tokenContract.balanceOf(airdropContract.target);
-            console.log("💰 Contract balance:", ethers.formatEther(contractBalance));
-            if (contractBalance < ethers.parseEther(claimAmount.toString())) {
-                toast.error("Airdrop contract has insufficient tokens");
+            // Check contract balance (no referral rewards)
+            let contractBalanceRaw;
+            try {
+                contractBalanceRaw = await tokenContract.balanceOf(airdropContract.target);
+                console.log("[claimAirdrop] Contract balance (raw):", contractBalanceRaw.toString());
+            } catch (err) {
+                toast.error("Failed to fetch contract token balance");
+                console.error("[claimAirdrop] Error fetching contract balance:", err);
+                setIsLoading(false);
+                return;
+            }
+            // Only require enough for the claim
+            if (contractBalanceRaw < ethers.parseEther(claimAmount.toString())) {
+                toast.error("Airdrop contract has insufficient tokens for your claim");
+                console.error("[claimAirdrop] Insufficient contract balance for claim only:", contractBalanceRaw.toString());
                 setIsLoading(false);
                 return;
             }
 
-            console.log("📝 Claiming airdrop:", {
-                referrer: referrer,
-                claimAmount: claimAmount
-            });
-
             // Estimate gas first
-            const gasEstimate = await airdropContract.claimAirdrop.estimateGas(referrer);
-            console.log("⛽ Gas estimate:", gasEstimate.toString());
+            let gasEstimate;
+            let tx;
+            try {
+                gasEstimate = await airdropContract.claimAirdrop.estimateGas(referrer);
+                console.log("[claimAirdrop] Gas estimate:", gasEstimate.toString());
+                
+                // Convert to BigNumber if it's not already (ethers v6 compatibility)
+                let gasLimit;
+                if (typeof gasEstimate === 'bigint') {
+                    // For ethers v6, gasEstimate is a BigInt
+                    gasLimit = (gasEstimate * 120n) / 100n; // Add 20% buffer using BigInt arithmetic
+                } else {
+                    // For ethers v5, gasEstimate is a BigNumber
+                    gasLimit = gasEstimate.mul(120).div(100); // Add 20% buffer
+                }
+                
+                tx = await airdropContract.claimAirdrop(referrer, {
+                    gasLimit: gasLimit
+                });
+            } catch (error) {
+                // Log all relevant state for debugging
+                console.error("[claimAirdrop] Gas estimation failed:", error);
+                console.error("[claimAirdrop] Debug info:", {
+                    userAddress,
+                    referrer,
+                    contractAddress: airdropContract.target,
+                    contractBalance: contractBalanceRaw.toString(),
+                    isPaused,
+                    hasClaimed,
+                    alreadyClaimed,
+                    currentNetwork,
+                    contractAddresses
+                });
+                toast.info("Gas estimation failed, trying to send transaction with fixed gas limit...");
+                try {
+                    tx = await airdropContract.claimAirdrop(referrer, {
+                        gasLimit: 300000
+                    });
+                } catch (sendError) {
+                    console.error("[claimAirdrop] Transaction send failed after fallback:", sendError);
+                    toast.error(sendError.reason || sendError.message || "Failed to send claim transaction (fallback)");
+                    setIsLoading(false);
+                    return;
+                }
+            }
 
-            const tx = await airdropContract.claimAirdrop(referrer, {
-                gasLimit: gasEstimate.mul(120).div(100) // Add 20% buffer
-            });
-
-            console.log("📡 Transaction sent:", tx.hash);
-            await tx.wait();
+            try {
+                await tx.wait();
+                console.log("[claimAirdrop] Transaction confirmed");
+            } catch (error) {
+                console.error("[claimAirdrop] Transaction wait failed:", error);
+                toast.error(error.reason || error.message || "Transaction failed after sending");
+                setIsLoading(false);
+                return;
+            }
 
             toast.success("🎉 Airdrop claimed successfully!");
             setHasClaimed(true);
@@ -308,18 +408,20 @@ export const AirdropProvider = ({ children }) => {
             // Refresh contract state
             await loadContractState(airdropContract, tokenContract, contractAddresses);
         } catch (error) {
-            console.error("❌ Claim error:", error, error?.reason, error?.data);
-            if (error.message.includes("Already claimed")) {
+            console.error("[claimAirdrop] General error:", error, error?.reason, error?.data);
+            if (error.message && error.message.includes("Already claimed")) {
                 toast.error("You have already claimed your airdrop");
                 setHasClaimed(true);
-            } else if (error.message.includes("Outside claim period") || error.message.includes("Airdrop has ended")) {
+            } else if (error.message && (error.message.includes("Outside claim period") || error.message.includes("Airdrop has ended"))) {
                 toast.error("Airdrop is not active at this time");
-            } else if (error.message.includes("Insufficient balance")) {
+            } else if (error.message && error.message.includes("Insufficient balance")) {
                 toast.error("Airdrop contract has insufficient tokens");
-            } else if (error.message.includes("Airdrop is paused")) {
+            } else if (error.message && error.message.includes("Airdrop is paused")) {
                 toast.error("Airdrop is currently paused");
-            } else if (error.message.includes("missing revert data")) {
-                toast.error("Transaction failed. Please check if you have already claimed or if the contract is properly configured.");
+            } else if (error.message && error.message.includes("missing revert data")) {
+                toast.error("Transaction failed with missing revert data. Please check the console for more details.");
+            } else if (error.data && error.data.message) {
+                toast.error(error.data.message);
             } else {
                 toast.error(error.reason || error.message || "Failed to claim airdrop");
             }
@@ -421,7 +523,7 @@ export const AirdropProvider = ({ children }) => {
         try {
             const tx = await airdropContract.updateReferralPercentages(newPercentages);
             await tx.wait();
-            setReferralPercentages(newPercentages);
+            // setReferralPercentages(newPercentages); // Removed as per edit
             toast.success("Referral percentages updated successfully");
         } catch (error) {
             console.error("Update percentages error:", error);
@@ -436,9 +538,7 @@ export const AirdropProvider = ({ children }) => {
                 isPaused,
                 hasClaimed,
                 maxClaimPerUser,
-                startTime,
                 endTime,
-                referralPercentages,
                 contractBalance,
                 userTokenBalance,
                 isLoading,
@@ -453,7 +553,7 @@ export const AirdropProvider = ({ children }) => {
                 unpauseAirdrop,
                 withdrawRemaining,
                 updateVerifier,
-                updateReferralPercentages,
+                // updateReferralPercentages, // Removed as per edit
                 loadContractState: () => loadContractState(airdropContract, tokenContract, contractAddresses),
             }}
         >

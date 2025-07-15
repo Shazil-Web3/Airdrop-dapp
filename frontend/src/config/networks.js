@@ -4,7 +4,7 @@ export const NETWORKS = {
   SEPOLIA: {
     id: 11155111,
     name: 'Sepolia',
-    rpcUrl: 'https://sepolia.infura.io/v3/YOUR_INFURA_KEY', // Replace with your Infura key
+    rpcUrl: 'https://sepolia.infura.io', // Match MetaMask endpoint
     explorer: 'https://sepolia.etherscan.io',
     chainId: '0xaa36a7', // 11155111 in hex
     nativeCurrency: {
@@ -30,7 +30,7 @@ export const NETWORKS = {
 // Contract addresses for different networks
 export const CONTRACT_ADDRESSES = {
   SEPOLIA: {
-    AIRDROP_CONTRACT: "0x8235c7Ea3C7C4cfF859F119b450190eE797E1614",
+    AIRDROP_CONTRACT: "0x99ac93C47c39A59D53bbe77010C6621d7Dd5d88e", // <-- update this!
     TOKEN_CONTRACT: "0xC9baEB94eEF9D702291936bfAcFB601A1A6eFcB5",
     VERIFIER_CONTRACT: "0x0000000000000000000000000000000000000000" // Zero address for now
   },

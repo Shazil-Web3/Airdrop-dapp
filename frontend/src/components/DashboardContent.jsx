@@ -290,49 +290,40 @@ export const DashboardContent = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <div className="group animate-fade-in bg-gradient-to-br from-slate-900/90 to-slate-800/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 shadow-2xl hover:shadow-purple-500/10 transition-all duration-500 hover:scale-105 hover:border-purple-500/30">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-purple-500/25 transition-all duration-300">
-                <Coins className="h-5 w-5 text-white" />
+        <div className="flex justify-center mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl">
+            <div className="group animate-fade-in bg-gradient-to-br from-slate-900/90 to-slate-800/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 shadow-2xl hover:shadow-purple-500/10 transition-all duration-500 hover:scale-105 hover:border-purple-500/30">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-purple-500/25 transition-all duration-300">
+                  <Coins className="h-5 w-5 text-white" />
+                </div>
+                <ExternalLink className="h-4 w-4 text-slate-400 group-hover:text-purple-400 transition-colors duration-300" />
               </div>
-              <ExternalLink className="h-4 w-4 text-slate-400 group-hover:text-purple-400 transition-colors duration-300" />
+              <div className="text-2xl font-bold text-white mb-1">{userStats.claimedAmount.toLocaleString()}</div>
+              <div className="text-slate-400 text-sm font-medium">Claimed Airdrop</div>
             </div>
-            <div className="text-2xl font-bold text-white mb-1">{userStats.claimedAmount.toLocaleString()}</div>
-            <div className="text-slate-400 text-sm font-medium">Claimed Airdrop</div>
-          </div>
 
-          <div className="group animate-fade-in bg-gradient-to-br from-slate-900/90 to-slate-800/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 shadow-2xl hover:shadow-cyan-500/10 transition-all duration-500 hover:scale-105 hover:border-cyan-500/30" style={{ animationDelay: "0.1s" }}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-cyan-500/25 transition-all duration-300">
-                <Users className="h-5 w-5 text-white" />
+            <div className="group animate-fade-in bg-gradient-to-br from-slate-900/90 to-slate-800/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 shadow-2xl hover:shadow-cyan-500/10 transition-all duration-500 hover:scale-105 hover:border-cyan-500/30" style={{ animationDelay: "0.1s" }}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-cyan-500/25 transition-all duration-300">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+                <ExternalLink className="h-4 w-4 text-slate-400 group-hover:text-cyan-400 transition-colors duration-300" />
               </div>
-              <ExternalLink className="h-4 w-4 text-slate-400 group-hover:text-cyan-400 transition-colors duration-300" />
+              <div className="text-2xl font-bold text-white mb-1">{userStats.totalReferrals.toLocaleString()}</div>
+              <div className="text-slate-400 text-sm font-medium">Total Referrals</div>
             </div>
-            <div className="text-2xl font-bold text-white mb-1">{userStats.totalReferrals.toLocaleString()}</div>
-            <div className="text-slate-400 text-sm font-medium">Total Referrals</div>
-          </div>
 
-          <div className="group animate-fade-in bg-gradient-to-br from-slate-900/90 to-slate-800/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:scale-105 hover:border-blue-500/30" style={{ animationDelay: "0.2s" }}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-blue-500/25 transition-all duration-300">
-                <TrendingUp className="h-5 w-5 text-white" />
+            <div className="group animate-fade-in bg-gradient-to-br from-slate-900/90 to-slate-800/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:scale-105 hover:border-blue-500/30" style={{ animationDelay: "0.2s" }}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-blue-500/25 transition-all duration-300">
+                  <TrendingUp className="h-5 w-5 text-white" />
+                </div>
+                <ExternalLink className="h-4 w-4 text-slate-400 group-hover:text-blue-400 transition-colors duration-300" />
               </div>
-              <ExternalLink className="h-4 w-4 text-slate-400 group-hover:text-blue-400 transition-colors duration-300" />
+              <div className="text-2xl font-bold text-white mb-1">{userStats.activeReferrals.toLocaleString()}</div>
+              <div className="text-slate-400 text-sm font-medium">Active Referrals</div>
             </div>
-            <div className="text-2xl font-bold text-white mb-1">{userStats.activeReferrals.toLocaleString()}</div>
-            <div className="text-slate-400 text-sm font-medium">Active Referrals</div>
-          </div>
-
-          <div className="group animate-fade-in bg-gradient-to-br from-slate-900/90 to-slate-800/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 shadow-2xl hover:shadow-green-500/10 transition-all duration-500 hover:scale-105 hover:border-green-500/30" style={{ animationDelay: "0.3s" }}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-green-500/25 transition-all duration-300">
-                <Gift className="h-5 w-5 text-white" />
-              </div>
-              <ExternalLink className="h-4 w-4 text-slate-400 group-hover:text-green-400 transition-colors duration-300" />
-            </div>
-            <div className="text-2xl font-bold text-white mb-1">{userStats.pendingRewards.toLocaleString()}</div>
-            <div className="text-slate-400 text-sm font-medium">Pending Rewards</div>
           </div>
         </div>
 
@@ -345,48 +336,36 @@ export const DashboardContent = () => {
                 <LinkIcon className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white mb-1">Your Referral Link</h2>
-                <p className="text-slate-400 text-sm">Share this link to earn rewards and grow your network</p>
+                <h2 className="text-2xl font-bold text-white mb-1">Your Referral Code</h2>
+                <p className="text-slate-400 text-sm">Share this code to earn rewards and grow your network</p>
               </div>
             </div>
-            
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-600/30 mb-4">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-300 text-sm font-mono truncate flex-1 mr-3">
-                  {referralLink || (user?.referralCode ? `Referral Code: ${user.referralCode}` : 'Loading referral code...')}
-                </span>
+            {/* Only show the referral code, not the link */}
+            {user?.referralCode ? (
+              <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-4 border border-slate-600/20 mb-4 flex items-center justify-between">
+                <div>
+                  <span className="text-slate-400 text-xs font-medium uppercase tracking-wide">Your Referral Code</span>
+                  <div className="text-white font-mono text-lg font-bold mt-1">{user.referralCode}</div>
+                </div>
                 <button
                   onClick={copyToClipboard}
-                  className="flex-shrink-0 bg-gradient-to-r from-purple-500 to-cyan-600 hover:from-purple-600 hover:to-cyan-700 text-white p-2 rounded-lg transition-all duration-300 hover:scale-110 shadow-lg"
-                  disabled={!referralLink && !user?.referralCode}
+                  className="flex-shrink-0 bg-gradient-to-r from-purple-500 to-cyan-600 hover:from-purple-600 hover:to-cyan-700 text-white p-2 rounded-lg transition-all duration-300 hover:scale-110 shadow-lg ml-4"
+                  disabled={!user?.referralCode}
                 >
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </button>
               </div>
-            </div>
-            
-            {/* Referral Code Display */}
-            {user?.referralCode && (
+            ) : (
               <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl p-4 border border-slate-600/20 mb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-slate-400 text-xs font-medium uppercase tracking-wide">Your Referral Code</span>
-                    <div className="text-white font-mono text-lg font-bold mt-1">{user.referralCode}</div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-slate-400 text-xs">Share this code</span>
-                    <div className="text-slate-300 text-sm mt-1">or use the link above</div>
-                  </div>
-                </div>
+                <span className="text-slate-400 text-sm">Loading referral code...</span>
               </div>
             )}
-            
             <button
               onClick={shareReferralLink}
-              className="w-full bg-gradient-to-r from-purple-500 to-cyan-600 hover:from-purple-600 hover:to-cyan-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center shadow-lg hover:shadow-purple-500/25 text-base"
+              className="w-full bg-gradient-to-r from-purple-500 to-cyan-600 hover:from-purple-600 hover:to-cyan-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center shadow-lg hover:shadow-purple-500/25 text-base mt-2"
             >
               <Share2 className="h-5 w-5 mr-2" />
-              Share Referral Link
+              Share Referral Code
             </button>
           </div>
 
@@ -401,72 +380,62 @@ export const DashboardContent = () => {
                 <p className="text-slate-400 text-sm">You can claim the following amount:</p>
               </div>
             </div>
-            
-            {/* Contract Status */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-600/30">
-                <div className="text-sm text-slate-400 mb-1">Contract Balance</div>
-                <div className="text-lg font-bold text-white">{parseFloat(contractBalance || 0).toLocaleString()} HIVOX</div>
-                  </div>
-              <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-600/30">
-                <div className="text-sm text-slate-400 mb-1">Your Balance</div>
-                <div className="text-lg font-bold text-white">{parseFloat(userTokenBalance || 0).toLocaleString()} HIVOX</div>
-              </div>
-              </div>
-              
+            {/* Removed Contract Balance and Your Balance grids */}
             <div className="flex items-center justify-between bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-600/30 mb-4">
               <span className="text-3xl font-bold text-green-400">{claimableAmount.toLocaleString()} HIVOX</span>
               <span className="text-slate-400 text-sm">Claimable Amount</span>
-                  </div>
-            
+            </div>
             {/* Status Messages */}
             {hasClaimed && (
               <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg">
                 <div className="text-green-400 text-sm font-semibold">✅ Airdrop Already Claimed</div>
                 <div className="text-green-300 text-xs">You have successfully claimed your airdrop tokens.</div>
-                </div>
+              </div>
             )}
-            
+            {/* Improved Gitcoin Passport Verification UI */}
             <div className="mb-4 p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg flex flex-col items-center">
               <div className="text-lg font-bold text-white mb-2">Gitcoin Passport Verification</div>
               <div className="text-slate-300 text-sm mb-2">
                 {loadingScore ? "Checking your score..." : `Current Score: ${score} / ${threshold}`}
               </div>
               {!allowed && (
-                <>
-                  <div className="text-red-400 text-xs mb-2">
+                <div className="flex flex-col items-center gap-2 w-full">
+                  <div className="text-red-400 text-xs mb-2 text-center">
                     Your Gitcoin Passport score is too low to claim the airdrop.<br />
                     (Required: {threshold})
                   </div>
-                  <a
-                    href="https://passport.gitcoin.co"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-all duration-300"
-                  >
-                    Go verify on Gitcoin Passport
-                  </a>
-                  <button
-                    onClick={checkPassportScore}
-                    disabled={loadingScore}
-                    className="ml-2 bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded transition-all duration-300"
-                  >
-                    Refresh Score
-                  </button>
-                </>
+                  <div className="flex flex-col sm:flex-row gap-2 w-full justify-center">
+                    <a
+                      href="https://passport.gitcoin.co"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 text-center shadow-md"
+                    >
+                      Go verify on Gitcoin Passport
+                    </a>
+                    <button
+                      onClick={checkPassportScore}
+                      disabled={loadingScore}
+                      className="flex-1 bg-gradient-to-r from-gray-700 to-slate-700 hover:from-gray-800 hover:to-slate-800 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 shadow-md"
+                    >
+                      {loadingScore ? <Loader className="inline h-4 w-4 animate-spin mr-2" /> : null}
+                      Refresh Score
+                    </button>
+                  </div>
+                </div>
               )}
               {allowed && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full justify-center">
                   <button
                     onClick={refreshClaimStatus}
                     disabled={loadingScore}
-                    className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded transition-all duration-300"
+                    className="bg-gradient-to-r from-gray-600 to-slate-700 hover:from-gray-700 hover:to-slate-800 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 shadow-md"
                   >
                     Refresh Status
                   </button>
                   <button
                     onClick={handleClaimAirdrop}
-                    className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300"
+                    className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-md"
                   >
                     Claim Airdrop
                   </button>
