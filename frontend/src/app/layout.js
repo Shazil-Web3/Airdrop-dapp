@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { LenisProvider } from "../components/LenisProvider.jsx";
 import { Providers } from "../components/Providers.jsx";
+import AIChatWidget from '../components/AIChatWidget.jsx';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,6 +28,7 @@ export default function RootLayout({ children }) {
         <Providers>
           <LenisProvider>
             {children}
+            <AIChatWidget />
           </LenisProvider>
         </Providers>
       </body>

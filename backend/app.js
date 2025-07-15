@@ -12,6 +12,7 @@ const compression = require('compression');
 // Import routes
 const userRoutes = require('./routes/users');
 const claimRoutes = require('./routes/claims');
+const aiRoutes = require('./routes/ai');
 
 const app = express();
 
@@ -71,6 +72,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/users', userRoutes);
 app.use('/api/claims', claimRoutes);
+app.use('/api/ai-chat', aiRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

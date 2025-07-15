@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google/genai": "^1.9.0",
     "@rainbow-me/rainbowkit": "^2.2.8",
     "@sismo-core/sismo-connect-client": "^0.0.23",
     "@sismo-core/sismo-connect-react": "^0.0.23",

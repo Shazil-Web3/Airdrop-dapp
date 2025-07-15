@@ -194,6 +194,44 @@ export const AirdropProvider = ({ children }) => {
         }
     };
 
+    // Define connectWallet function
+    const connectWallet = async () => {
+        if (!window.ethereum) {
+            toast.error("Please install MetaMask or another Web3 wallet");
+            return;
+        }
+        try {
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            // Re-initialize provider, signer, and contracts
+            const network = getCurrentNetwork();
+            const addresses = getContractAddresses();
+            setCurrentNetwork(network);
+            setContractAddresses(addresses);
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            setProvider(provider);
+            const signer = await provider.getSigner();
+            setSigner(signer);
+            const userAddress = await signer.getAddress();
+            setAccount(userAddress);
+            const airdropInstance = new ethers.Contract(
+                addresses.AIRDROP_CONTRACT,
+                airdropABI.abi,
+                signer
+            );
+            setAirdropContract(airdropInstance);
+            const tokenInstance = new ethers.Contract(
+                addresses.TOKEN_CONTRACT,
+                tokenABI.abi,
+                signer
+            );
+            setTokenContract(tokenInstance);
+            await loadContractState(airdropInstance, tokenInstance, addresses);
+        } catch (error) {
+            console.error("Wallet connection error:", error);
+            toast.error("Failed to connect wallet");
+        }
+    };
+
     // Claim airdrop
     const claimAirdrop = async (referrerAddress = null) => {
         if (!airdropContract || !signer) {
