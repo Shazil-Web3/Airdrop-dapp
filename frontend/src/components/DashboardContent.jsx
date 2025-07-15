@@ -24,12 +24,16 @@ import { useAirdrop } from '../context/RContext.jsx';
 import apiService from '../lib/api';
 import { ContractTestRunner } from './ContractTestRunner.jsx';
 import { AirdropFunder } from './AirdropFunder.jsx';
-import { SismoConnectButtonComponent } from './SismoConnectButton.jsx';
+import { fetchPassportScore } from '../lib/gitcoinPassport';
 
 export const DashboardContent = () => {
   const { address, isConnected } = useAccount();
   const [copied, setCopied] = useState(false);
   const hasSyncedRef = useRef(false);
+  const [allowed, setAllowed] = useState(false);
+  const [score, setScore] = useState(0);
+  const [threshold, setThreshold] = useState(1);
+  const [loadingScore, setLoadingScore] = useState(false);
   
   // Use the new AirdropContext
   const {
@@ -45,6 +49,7 @@ export const DashboardContent = () => {
     isZKVerified,
     zkVerifying,
     claimAirdrop,
+    refreshClaimStatus,
     verifyZKProof,
     canClaim,
     getClaimableAmount,
@@ -141,6 +146,26 @@ export const DashboardContent = () => {
       copyToClipboard();
     }
   };
+
+  async function checkPassportScore() {
+    if (!address) return;
+    setLoadingScore(true);
+    try {
+      const result = await fetchPassportScore(address);
+      setScore(result.score);
+      setAllowed(!!result.passing);
+      setThreshold(result.threshold || 1);
+    } catch (e) {
+      setScore(0);
+      setAllowed(false);
+      setThreshold(1);
+    }
+    setLoadingScore(false);
+  }
+
+  useEffect(() => {
+    if (address) checkPassportScore();
+  }, [address]);
 
   // Handle airdrop claim
   const handleClaimAirdrop = async () => {
@@ -382,92 +407,72 @@ export const DashboardContent = () => {
               <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-600/30">
                 <div className="text-sm text-slate-400 mb-1">Contract Balance</div>
                 <div className="text-lg font-bold text-white">{parseFloat(contractBalance || 0).toLocaleString()} HIVOX</div>
-              </div>
+                  </div>
               <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-600/30">
                 <div className="text-sm text-slate-400 mb-1">Your Balance</div>
                 <div className="text-lg font-bold text-white">{parseFloat(userTokenBalance || 0).toLocaleString()} HIVOX</div>
               </div>
-            </div>
-            
+              </div>
+              
             <div className="flex items-center justify-between bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-slate-600/30 mb-4">
               <span className="text-3xl font-bold text-green-400">{claimableAmount.toLocaleString()} HIVOX</span>
               <span className="text-slate-400 text-sm">Claimable Amount</span>
-            </div>
+                  </div>
             
             {/* Status Messages */}
             {hasClaimed && (
               <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg">
                 <div className="text-green-400 text-sm font-semibold">✅ Airdrop Already Claimed</div>
                 <div className="text-green-300 text-xs">You have successfully claimed your airdrop tokens.</div>
-              </div>
+                </div>
             )}
             
-            {!hasClaimed && !isZKVerified && (
-              <div className="mb-4 p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg">
-                <div className="text-blue-400 text-sm font-semibold">🔐 ZK Verification Required</div>
-                <div className="text-blue-300 text-xs">Please verify your ZK proof before claiming your tokens.</div>
+            <div className="mb-4 p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg flex flex-col items-center">
+              <div className="text-lg font-bold text-white mb-2">Gitcoin Passport Verification</div>
+              <div className="text-slate-300 text-sm mb-2">
+                {loadingScore ? "Checking your score..." : `Current Score: ${score} / ${threshold}`}
               </div>
-            )}
-            
-            {!hasClaimed && isZKVerified && (
-              <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg">
-                <div className="text-green-400 text-sm font-semibold">✅ ZK Verification Complete</div>
-                <div className="text-green-300 text-xs">You can now claim your airdrop tokens.</div>
-              </div>
-            )}
-            
-            {isPaused && (
-              <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
-                <div className="text-red-400 text-sm font-semibold">⏸️ Airdrop Paused</div>
-                <div className="text-red-300 text-xs">The airdrop is currently paused by the admin.</div>
-              </div>
-            )}
-            
-            {parseFloat(contractBalance || 0) < 1000 && (
-              <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
-                <div className="text-yellow-400 text-sm font-semibold">⚠️ Insufficient Contract Balance</div>
-                <div className="text-yellow-300 text-xs">The airdrop contract needs more tokens to function.</div>
-              </div>
-            )}
-            
-            {!hasClaimed && !isZKVerified ? (
-              <SismoConnectButtonComponent
-                onProofGenerated={async (zkProof) => {
-                  console.log("🔐 Sismo proof generated:", zkProof);
-                  // Store the proof for later use in claiming
-                  localStorage.setItem('sismoProof', JSON.stringify(zkProof));
-                }}
-                onVerificationComplete={async (zkProof) => {
-                  console.log("✅ Sismo verification completed");
-                  setIsZKVerified(true);
-                  toast.success("ZK verification successful! You can now claim your tokens.");
-                }}
-                disabled={isPaused}
-              />
-            ) : (
-              <button
-                onClick={handleClaimAirdrop}
-                disabled={hasClaimed || isPaused || !canClaim() || isLoading}
-                className={`w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center shadow-lg hover:shadow-green-500/25 text-base ${
-                  hasClaimed || isPaused || !canClaim() || isLoading ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader className="h-5 w-5 mr-2 animate-spin" />
-                    Claiming...
-                  </>
-                ) : hasClaimed ? (
-                  'Airdrop Claimed'
-                ) : isPaused ? (
-                  'Airdrop Paused'
-                ) : !canClaim() ? (
-                  'Cannot Claim'
-                ) : (
-                  'Claim Airdrop'
-                )}
-              </button>
-            )}
+              {!allowed && (
+                <>
+                  <div className="text-red-400 text-xs mb-2">
+                    Your Gitcoin Passport score is too low to claim the airdrop.<br />
+                    (Required: {threshold})
+                  </div>
+                  <a
+                    href="https://passport.gitcoin.co"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-all duration-300"
+                  >
+                    Go verify on Gitcoin Passport
+                  </a>
+                  <button
+                    onClick={checkPassportScore}
+                    disabled={loadingScore}
+                    className="ml-2 bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded transition-all duration-300"
+                  >
+                    Refresh Score
+                  </button>
+                </>
+              )}
+              {allowed && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={refreshClaimStatus}
+                    disabled={loadingScore}
+                    className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded transition-all duration-300"
+                  >
+                    Refresh Status
+                  </button>
+                  <button
+                    onClick={handleClaimAirdrop}
+                    className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300"
+                  >
+                    Claim Airdrop
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

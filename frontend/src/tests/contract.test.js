@@ -3,7 +3,7 @@ import airdropABI from '../context/airdrop.json';
 import tokenABI from '../context/token.json';
 
 // Contract addresses from .env
-const AIRDROP_CONTRACT_ADDRESS = "0x8235c7Ea3C7C4cfF859F119b450190eE797E1614";
+const AIRDROP_CONTRACT_ADDRESS = "0x2024fe0bE7b8E343cee63082406F4C88ae835877";
 const TOKEN_CONTRACT_ADDRESS = "0xC9baEB94eEF9D702291936bfAcFB601A1A6eFcB5";
 const VERIFIER_ADDRESS = "0x0000000000000000000000000000000000000000"; // Zero address as specified
 
@@ -88,57 +88,15 @@ class SimpleClaimTester {
                 parseFloat(contractBalanceTokens) >= MAX_CLAIM_PER_USER, 
                 `Contract balance: ${contractBalanceTokens} tokens, need: ${MAX_CLAIM_PER_USER} tokens`);
             
-            // 5. Try to claim tokens with different ZK proof approaches
-            console.log("\n🔐 Testing ZK Proof Approaches...");
-            
-            // Approach 1: Empty proof
-            console.log("📝 Trying with empty proof...");
+            // 5. Try to claim tokens (no ZK proof, only referrer address)
+            console.log("\n🚀 Attempting to claim airdrop (no ZK proof, only referrer address)...");
             try {
-                const emptyProof = "0x";
-                const tx = await this.airdropContract.claimAirdrop(ethers.ZeroAddress, emptyProof);
+                // Use zero address as referrer for test
+                const referrer = ethers.ZeroAddress;
+                const tx = await this.airdropContract.claimAirdrop(referrer);
                 await tx.wait();
-                console.log("✅ Claim successful with empty proof!");
-                this.assertTest("Claim with empty proof", true, "Successfully claimed with empty proof");
-                
-                // Verify claim
-                const claimedAfter = await this.airdropContract.hasClaimed(userAddress);
-                this.assertTest("User marked as claimed", claimedAfter === true, 
-                    `Claimed status: ${claimedAfter}`);
-                
-                return; // Success, no need to try other approaches
-                
-            } catch (error) {
-                console.log(`❌ Empty proof failed: ${error.message}`);
-            }
-            
-            // Approach 2: Zero address as proof
-            console.log("📝 Trying with zero address as proof...");
-            try {
-                const zeroProof = ethers.ZeroAddress;
-                const tx = await this.airdropContract.claimAirdrop(ethers.ZeroAddress, zeroProof);
-                await tx.wait();
-                console.log("✅ Claim successful with zero address proof!");
-                this.assertTest("Claim with zero address proof", true, "Successfully claimed with zero address proof");
-                
-                // Verify claim
-                const claimedAfter = await this.airdropContract.hasClaimed(userAddress);
-                this.assertTest("User marked as claimed", claimedAfter === true, 
-                    `Claimed status: ${claimedAfter}`);
-                
-                return; // Success, no need to try other approaches
-                
-            } catch (error) {
-                console.log(`❌ Zero address proof failed: ${error.message}`);
-            }
-            
-            // Approach 3: Mock proof with proper format
-            console.log("📝 Trying with mock proof...");
-            try {
-                const mockProof = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
-                const tx = await this.airdropContract.claimAirdrop(ethers.ZeroAddress, mockProof);
-                await tx.wait();
-                console.log("✅ Claim successful with mock proof!");
-                this.assertTest("Claim with mock proof", true, "Successfully claimed with mock proof");
+                console.log("✅ Claim successful!");
+                this.assertTest("Claim with referrer only", true, "Successfully claimed with referrer only");
                 
                 // Verify claim
                 const claimedAfter = await this.airdropContract.hasClaimed(userAddress);
@@ -146,9 +104,8 @@ class SimpleClaimTester {
                     `Claimed status: ${claimedAfter}`);
                 
             } catch (error) {
-                console.log(`❌ Mock proof failed: ${error.message}`);
-                this.assertTest("All ZK proof approaches failed", false, 
-                    `All proof attempts failed. Last error: ${error.message}`);
+                console.log(`❌ Claim failed: ${error.message}`);
+                this.assertTest("Claim with referrer only", false, `Claim failed: ${error.message}`);
             }
             
             console.log("\n✅ Token claiming tests completed");

@@ -2,7 +2,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
-import { generateZKProof } from '../lib/zkVerifier.js';
 import { getContractAddresses, getCurrentNetwork } from '../config/networks.js';
 
 // Import ABIs
@@ -29,8 +28,6 @@ export const AirdropProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [currentNetwork, setCurrentNetwork] = useState(null);
     const [contractAddresses, setContractAddresses] = useState(null);
-    const [isZKVerified, setIsZKVerified] = useState(false);
-    const [zkVerifying, setZkVerifying] = useState(false);
 
     // Initialize provider, signer, and contracts
     useEffect(() => {
@@ -72,7 +69,7 @@ export const AirdropProvider = ({ children }) => {
                 setTokenContract(tokenInstance);
 
                 // Fetch contract state
-                await loadContractState(airdropInstance, tokenInstance, userAddress, addresses);
+                await loadContractState(airdropInstance, tokenInstance, addresses);
             } catch (error) {
                 console.error("Initialization error:", error);
                 toast.error("Failed to connect to contract");
@@ -108,14 +105,29 @@ export const AirdropProvider = ({ children }) => {
         };
     }, []);
 
-    const loadContractState = async (airdropInstance, tokenInstance, userAddress, addresses) => {
+    const loadContractState = async (airdropInstance, tokenInstance, addresses) => {
         try {
+            // Always use the currently connected wallet address
+            const signer = airdropInstance.runner;
+            const userAddress = signer && signer.getAddress ? await signer.getAddress() : account;
+
+            console.log("🔍 Loading contract state for address:", userAddress);
+
             // Fetch airdrop contract state
             const paused = await airdropInstance.paused();
             const maxClaim = await airdropInstance.maxClaimPerUser();
             const start = await airdropInstance.startTime();
             const end = await airdropInstance.endTime();
             const claimed = await airdropInstance.hasClaimed(userAddress);
+
+            console.log("📊 Contract state loaded:", {
+                userAddress,
+                paused,
+                maxClaim: ethers.formatEther(maxClaim),
+                startTime: Number(start),
+                endTime: Number(end),
+                hasClaimed: claimed
+            });
 
             // Fetch token balances
             const contractBalance = await tokenInstance.balanceOf(addresses.AIRDROP_CONTRACT);
@@ -151,107 +163,60 @@ export const AirdropProvider = ({ children }) => {
         }
     };
 
-    // Connect wallet
-    const connectWallet = async () => {
-        if (!window.ethereum) {
-            toast.error("Please install MetaMask or another Web3 wallet");
-            return;
-        }
-
-        try {
-            await window.ethereum.request({ method: 'eth_requestAccounts' });
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            const address = await signer.getAddress();
-            setProvider(provider);
-            setSigner(signer);
-            setAccount(address);
-            toast.success("Wallet connected successfully");
-        } catch (error) {
-            console.error("Wallet connection error:", error);
-            toast.error("Failed to connect wallet");
-        }
-    };
-
-    // Generate ZK proof for claiming
-    const generateZKProofForClaim = async (userAddress, claimAmount, referrerAddress = null) => {
-        try {
-            console.log("Generating ZK proof for claim...");
-            const proof = await generateZKProof(userAddress, claimAmount, referrerAddress);
-            console.log("ZK proof generated successfully");
-            return proof;
-        } catch (error) {
-            console.error("Error generating ZK proof:", error);
-            // Fallback to mock proof
-            return ethers.randomBytes(32);
-        }
-    };
-
-    // Verify ZK proof (step before claiming)
-    const verifyZKProof = async () => {
+    // Force refresh claim status
+    const refreshClaimStatus = async () => {
         if (!airdropContract || !signer) {
             toast.error("Please connect your wallet");
             return;
         }
 
-        if (hasClaimed) {
-            toast.error("You have already claimed your airdrop");
-            return;
-        }
-
-        if (isPaused) {
-            toast.error("Airdrop is currently paused");
-            return;
-        }
-
-        setZkVerifying(true);
-
         try {
             const userAddress = await signer.getAddress();
-            const claimAmount = 1000; // Fixed amount of 1000 tokens
-
-            console.log("🔐 Verifying ZK proof for:", {
-                userAddress,
-                claimAmount
-            });
-
-            // Generate real Sismo ZK proof
-            const zkProof = await generateZKProofForClaim(userAddress, claimAmount);
-
-            // Verify the proof using Sismo
-            const isValid = await verifyZKProof(zkProof, userAddress);
+            console.log("🔄 Refreshing claim status for:", userAddress);
             
-            if (isValid) {
-                console.log("✅ ZK proof verification completed successfully");
-                setIsZKVerified(true);
-                toast.success("ZK verification successful! You can now claim your tokens.");
+            // Clear the hasClaimed state first
+            setHasClaimed(false);
+            
+            // Check claim status directly from contract
+            const claimed = await airdropContract.hasClaimed(userAddress);
+            console.log("✅ Claim status from contract:", claimed);
+            
+            setHasClaimed(claimed);
+            
+            if (!claimed) {
+                toast.success("Claim status refreshed - you can claim!");
             } else {
-                console.log("❌ ZK proof verification failed");
-                toast.error("ZK verification failed. Please try again.");
+                toast.info("Claim status refreshed - you have already claimed");
             }
-            
         } catch (error) {
-            console.error("ZK verification error:", error);
-            toast.error("ZK verification failed. Please try again.");
-        } finally {
-            setZkVerifying(false);
+            console.error("Error refreshing claim status:", error);
+            toast.error("Failed to refresh claim status");
         }
     };
 
-    // Claim airdrop with ZK proof
+    // Claim airdrop
     const claimAirdrop = async (referrerAddress = null) => {
         if (!airdropContract || !signer) {
             toast.error("Please connect your wallet");
             return;
         }
 
-        if (hasClaimed) {
+        // Force refresh claim status before attempting to claim
+        const userAddress = await signer.getAddress();
+        console.log("🎯 Attempting claim for address:", userAddress);
+        
+        // Check claim status directly from contract
+        const alreadyClaimed = await airdropContract.hasClaimed(userAddress);
+        console.log("🔍 Direct contract check - hasClaimed:", alreadyClaimed);
+        
+        if (alreadyClaimed) {
             toast.error("You have already claimed your airdrop");
+            setHasClaimed(true);
             return;
         }
 
-        if (!isZKVerified) {
-            toast.error("Please verify your ZK proof first");
+        if (hasClaimed) {
+            toast.error("You have already claimed your airdrop");
             return;
         }
 
@@ -260,17 +225,10 @@ export const AirdropProvider = ({ children }) => {
             return;
         }
 
-        const now = Math.floor(Date.now() / 1000);
-        if (now < startTime || now > endTime) {
-            toast.error("Airdrop is not active at this time");
-            return;
-        }
-
         setIsLoading(true);
 
         try {
-            const userAddress = await signer.getAddress();
-            const claimAmount = 1000; // Fixed amount of 1000 tokens
+            const claimAmount = 100; // Fixed amount of 100 tokens
             const referrer = referrerAddress || ethers.ZeroAddress;
 
             console.log("🚀 Preparing to claim airdrop:", {
@@ -281,62 +239,43 @@ export const AirdropProvider = ({ children }) => {
                 contractAddress: airdropContract.target
             });
 
-            // Check if user has already claimed
-            const alreadyClaimed = await airdropContract.hasClaimed(userAddress);
-            if (alreadyClaimed) {
-                toast.error("You have already claimed your airdrop");
-                setHasClaimed(true);
-                return;
-            }
-
             // Check contract balance
             const contractBalance = await tokenContract.balanceOf(airdropContract.target);
             console.log("💰 Contract balance:", ethers.formatEther(contractBalance));
-            
             if (contractBalance < ethers.parseEther(claimAmount.toString())) {
                 toast.error("Airdrop contract has insufficient tokens");
+                setIsLoading(false);
                 return;
             }
 
-            // Generate real Sismo ZK proof
-            const zkProof = await generateZKProofForClaim(userAddress, claimAmount, referrer);
-            console.log("🔐 Sismo ZK proof generated:", zkProof);
-
-            console.log("📝 Claiming airdrop with Sismo ZK proof:", {
+            console.log("📝 Claiming airdrop:", {
                 referrer: referrer,
-                zkProof: zkProof,
                 claimAmount: claimAmount
             });
 
             // Estimate gas first
-            const gasEstimate = await airdropContract.claimAirdrop.estimateGas(referrer, zkProof);
+            const gasEstimate = await airdropContract.claimAirdrop.estimateGas(referrer);
             console.log("⛽ Gas estimate:", gasEstimate.toString());
 
-            const tx = await airdropContract.claimAirdrop(referrer, zkProof, {
+            const tx = await airdropContract.claimAirdrop(referrer, {
                 gasLimit: gasEstimate.mul(120).div(100) // Add 20% buffer
             });
-            
+
             console.log("📡 Transaction sent:", tx.hash);
             await tx.wait();
-            
+
             toast.success("🎉 Airdrop claimed successfully!");
             setHasClaimed(true);
-            setIsZKVerified(false); // Reset verification state
-            
+
             // Refresh contract state
-            await loadContractState(airdropContract, tokenContract, account, contractAddresses);
-            
+            await loadContractState(airdropContract, tokenContract, contractAddresses);
         } catch (error) {
-            console.error("❌ Claim error:", error);
-            
-            // Handle specific error cases
+            console.error("❌ Claim error:", error, error?.reason, error?.data);
             if (error.message.includes("Already claimed")) {
                 toast.error("You have already claimed your airdrop");
                 setHasClaimed(true);
-            } else if (error.message.includes("Outside claim period")) {
+            } else if (error.message.includes("Outside claim period") || error.message.includes("Airdrop has ended")) {
                 toast.error("Airdrop is not active at this time");
-            } else if (error.message.includes("ZK Proof failed")) {
-                toast.error("ZK proof verification failed. Please try again.");
             } else if (error.message.includes("Insufficient balance")) {
                 toast.error("Airdrop contract has insufficient tokens");
             } else if (error.message.includes("Airdrop is paused")) {
@@ -351,21 +290,16 @@ export const AirdropProvider = ({ children }) => {
         }
     };
 
-    // Check if user can claim
+    // Check if user can claim (remove time-based restriction)
     const canClaim = () => {
-        const now = Math.floor(Date.now() / 1000);
-        return !isPaused && !hasClaimed && isZKVerified && now >= startTime && now <= endTime && parseFloat(contractBalance) >= 1000;
+        return !isPaused && !hasClaimed && parseFloat(contractBalance) >= 100;
     };
 
-    // Get claimable amount
+    // Get claimable amount (remove time-based restriction)
     const getClaimableAmount = () => {
         if (hasClaimed) return 0;
         if (isPaused) return 0;
-        
-        const now = Math.floor(Date.now() / 1000);
-        if (now < startTime || now > endTime) return 0;
-        
-        return 1000; // Fixed amount of 1000 tokens
+        return 100; // Fixed amount of 100 tokens
     };
 
     // Admin: Pause contract
@@ -415,7 +349,7 @@ export const AirdropProvider = ({ children }) => {
             const tx = await airdropContract.withdrawRemaining();
             await tx.wait();
             toast.success("Remaining tokens withdrawn successfully");
-            await loadContractState(airdropContract, tokenContract, account, contractAddresses);
+            await loadContractState(airdropContract, tokenContract, contractAddresses);
         } catch (error) {
             console.error("Withdraw error:", error);
             toast.error(error.reason || "Failed to withdraw tokens");
@@ -472,11 +406,9 @@ export const AirdropProvider = ({ children }) => {
                 isLoading,
                 currentNetwork,
                 contractAddresses,
-                isZKVerified,
-                zkVerifying,
                 connectWallet,
-                verifyZKProof,
                 claimAirdrop,
+                refreshClaimStatus,
                 canClaim,
                 getClaimableAmount,
                 pauseAirdrop,
@@ -484,7 +416,7 @@ export const AirdropProvider = ({ children }) => {
                 withdrawRemaining,
                 updateVerifier,
                 updateReferralPercentages,
-                loadContractState: () => loadContractState(airdropContract, tokenContract, account, contractAddresses),
+                loadContractState: () => loadContractState(airdropContract, tokenContract, contractAddresses),
             }}
         >
             {children}
