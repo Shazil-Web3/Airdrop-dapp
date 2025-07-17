@@ -13,6 +13,7 @@ const compression = require('compression');
 const userRoutes = require('./routes/users');
 const claimRoutes = require('./routes/claims');
 const aiRoutes = require('./routes/ai');
+const tweetTaskRoutes = require('./routes/tweetTask');
 
 const app = express();
 
@@ -73,6 +74,7 @@ app.get('/health', (req, res) => {
 app.use('/api/users', userRoutes);
 app.use('/api/claims', claimRoutes);
 app.use('/api/ai-chat', aiRoutes);
+app.use('/api/tweet-task', tweetTaskRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

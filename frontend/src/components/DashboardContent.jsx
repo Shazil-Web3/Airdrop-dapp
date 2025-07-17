@@ -25,6 +25,7 @@ import apiService from '../lib/api';
 import { ContractTestRunner } from './ContractTestRunner.jsx';
 import { AirdropFunder } from './AirdropFunder.jsx';
 import { fetchPassportScore } from '../lib/gitcoinPassport';
+import DashboardTaskRoadmap from './DashboardTaskRoadmap';
 
 export const DashboardContent = () => {
   const { address, isConnected } = useAccount();
@@ -34,6 +35,9 @@ export const DashboardContent = () => {
   const [score, setScore] = useState(0);
   const [threshold, setThreshold] = useState(1);
   const [loadingScore, setLoadingScore] = useState(false);
+  const [tweetTaskCompleted, setTweetTaskCompleted] = useState(false);
+  const [gitcoinVerified, setGitcoinVerified] = useState(false);
+  const [gitcoinVerificationDisabled, setGitcoinVerificationDisabled] = useState(false);
   
   // Use the new AirdropContext
   const {
@@ -175,9 +179,24 @@ export const DashboardContent = () => {
       if (loadContractState) {
         await loadContractState();
       }
+      // Refresh user data and activities for real-time dashboard update
+      if (refreshData) {
+        await refreshData();
+      }
+      if (loadUserData && address) {
+        await loadUserData(address);
+      }
     } catch (error) {
       console.error('Claim failed:', error);
     }
+  };
+
+  // Only allow Gitcoin verification after tweet task
+  const handleGitcoinVerified = async () => {
+    setGitcoinVerificationDisabled(true);
+    await checkPassportScore();
+    setGitcoinVerified(allowed);
+    setGitcoinVerificationDisabled(false);
   };
 
   // Calculate user stats from real data
@@ -327,6 +346,12 @@ export const DashboardContent = () => {
           </div>
         </div>
 
+        {/* Task Roadmap Grid */}
+        <DashboardTaskRoadmap
+          walletAddress={address}
+          tweetTaskCompleted={tweetTaskCompleted}
+          onTweetVerified={() => setTweetTaskCompleted(true)}
+        />
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Referral Link Section */}
@@ -386,12 +411,6 @@ export const DashboardContent = () => {
               <span className="text-slate-400 text-sm">Claimable Amount</span>
             </div>
             {/* Status Messages */}
-            {hasClaimed && (
-              <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg">
-                <div className="text-green-400 text-sm font-semibold">✅ Airdrop Already Claimed</div>
-                <div className="text-green-300 text-xs">You have successfully claimed your airdrop tokens.</div>
-              </div>
-            )}
             {/* Improved Gitcoin Passport Verification UI */}
             <div className="mb-4 p-3 bg-blue-500/20 border border-blue-500/50 rounded-lg flex flex-col items-center">
               <div className="text-lg font-bold text-white mb-2">Gitcoin Passport Verification</div>
@@ -409,7 +428,10 @@ export const DashboardContent = () => {
                       href="https://passport.gitcoin.co"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 text-center shadow-md"
+                      className={`flex-1 font-semibold py-2 px-4 rounded-lg transition-all duration-300 text-center shadow-md text-white ${!tweetTaskCompleted ? 'bg-gray-400 cursor-not-allowed opacity-60' : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700'}`}
+                      tabIndex={!tweetTaskCompleted ? -1 : 0}
+                      aria-disabled={!tweetTaskCompleted}
+                      onClick={e => { if (!tweetTaskCompleted) e.preventDefault(); }}
                     >
                       Go verify on Gitcoin Passport
                     </a>
