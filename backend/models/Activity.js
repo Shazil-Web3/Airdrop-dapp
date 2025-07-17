@@ -22,7 +22,9 @@ const activitySchema = new mongoose.Schema({
       'wallet_connected',
       'claim_submitted',
       'claim_confirmed',
-      'referral_created'
+      'referral_created',
+      'tweet_verified',
+      'gitcoin_verified'
     ],
     required: true
   },

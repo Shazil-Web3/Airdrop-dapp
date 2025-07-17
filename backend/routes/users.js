@@ -6,7 +6,8 @@ const {
   updateUserProfile,
   getUserActivities,
   getUserReferrals,
-  fixReferralCodes
+  fixReferralCodes,
+  logGitcoinVerified
 } = require('../controllers/userController');
 
 const router = express.Router();
@@ -48,5 +49,10 @@ router.get('/:walletAddress/referrals', getUserReferrals);
 // @desc    Fix referral codes for all users (Admin utility)
 // @access  Public (for now, should be protected in production)
 router.post('/fix-referral-codes', fixReferralCodes);
+
+// @route   POST /api/users/log-gitcoin-verified
+// @desc    Log Gitcoin Passport verification activity
+// @access  Public
+router.post('/log-gitcoin-verified', logGitcoinVerified);
 
 module.exports = router; 

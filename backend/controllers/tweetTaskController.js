@@ -1,5 +1,7 @@
 const axios = require('axios');
 const TweetTask = require('../models/TweetTask');
+const Activity = require('../models/Activity');
+const User = require('../models/User');
 require('dotenv').config();
 
 const predefinedText = 'Eth is Bullish..  Good for eth developers fam!';
@@ -70,6 +72,16 @@ exports.verifyTweet = async (req, res) => {
         { tweet: { completed: true, tweetId, verifiedAt: new Date() } },
         { upsert: true, new: true }
       );
+      // Log activity for tweet verification
+      const user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+      if (user) {
+        await Activity.create({
+          user: user._id,
+          walletAddress: user.walletAddress,
+          activityType: 'tweet_verified',
+          description: `Tweet verified for airdrop: https://x.com/i/web/status/${tweetId}`
+        });
+      }
       console.log('Tweet verified and DB updated for wallet:', walletAddress);
       return res.status(200).json({ message: 'Tweet verified successfully!', tweetId, authorId: tweet.author_id });
     } else {

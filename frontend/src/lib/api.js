@@ -89,6 +89,14 @@ class ApiService {
   async checkTweetTaskStatus(walletAddress) {
     return this.request(`/tweet-task/status?walletAddress=${walletAddress}`);
   }
+
+  // Activity Logging
+  async logGitcoinVerified(walletAddress) {
+    return this.request('/users/log-gitcoin-verified', {
+      method: 'POST',
+      body: JSON.stringify({ walletAddress }),
+    });
+  }
 }
 
 // Create a singleton instance

@@ -205,12 +205,21 @@ export const DashboardContent = () => {
   };
 
   // Only allow Gitcoin verification after tweet task
+  const [gitcoinLogged, setGitcoinLogged] = useState(false);
   const handleGitcoinVerified = async () => {
     setGitcoinVerificationDisabled(true);
     await checkPassportScore();
     setGitcoinVerified(allowed);
     setGitcoinVerificationDisabled(false);
   };
+
+  // Log Gitcoin verification activity when allowed becomes true
+  useEffect(() => {
+    if (address && allowed && !gitcoinLogged) {
+      apiService.logGitcoinVerified(address).catch(() => {});
+      setGitcoinLogged(true);
+    }
+  }, [address, allowed, gitcoinLogged]);
 
   // Update tweetTaskCompleted when tweet is verified
   const handleTweetVerified = () => {
@@ -498,30 +507,54 @@ export const DashboardContent = () => {
               </div>
             </div>
             <div className="space-y-3">
-              {activities.length > 0 ? (
-                activities.slice(0, 5).map((activity, index) => (
-                  <div key={activity.id || index} className="group flex items-center justify-between p-4 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-600/30 hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02]">
+              {(() => {
+                // Filter out duplicate wallet_connected, only show the most recent one
+                const filteredActivities = [];
+                let walletConnectedShown = false;
+                for (const activity of activities) {
+                  if (activity.activityType === 'wallet_connected') {
+                    if (!walletConnectedShown) {
+                      filteredActivities.push(activity);
+                      walletConnectedShown = true;
+                    }
+                  } else {
+                    filteredActivities.push(activity);
+                  }
+                }
+                return filteredActivities.slice(0, 5).map((activity, index) => (
+                  <div key={activity.id || index} className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 hover:scale-[1.02] 
+                    ${['tweet_verified','gitcoin_verified','claim_submitted'].includes(activity.activityType)
+                      ? 'bg-green-100/80 border-green-300 hover:border-green-400'
+                      : 'bg-slate-800/50 border-slate-600/30 hover:border-purple-500/30 backdrop-blur-sm'}
+                  `}>
                     <div className="flex items-center">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center mr-4 shadow-lg ${
                         activity.activityType === 'referral_created' ? 'bg-gradient-to-br from-green-500 to-emerald-500' :
                         activity.activityType === 'claim_submitted' ? 'bg-gradient-to-br from-blue-500 to-cyan-500' :
                         activity.activityType === 'referral_reward' ? 'bg-gradient-to-br from-purple-500 to-pink-500' :
+                        activity.activityType === 'tweet_verified' ? 'bg-gradient-to-br from-green-400 to-emerald-500' :
+                        activity.activityType === 'gitcoin_verified' ? 'bg-gradient-to-br from-green-400 to-lime-500' :
                         'bg-gradient-to-br from-slate-500 to-gray-500'
                       }`}>
                         {activity.activityType === 'referral_created' ? <Users className="h-5 w-5 text-white" /> :
                          activity.activityType === 'claim_submitted' ? <Coins className="h-5 w-5 text-white" /> :
                          activity.activityType === 'referral_reward' ? <Gift className="h-5 w-5 text-white" /> :
+                         activity.activityType === 'tweet_verified' ? <Share2 className="h-5 w-5 text-white" /> :
+                         activity.activityType === 'gitcoin_verified' ? <Star className="h-5 w-5 text-white" /> :
+                         activity.activityType === 'wallet_connected' ? <Wallet className="h-5 w-5 text-white" /> :
                          <TrendingUp className="h-5 w-5 text-white" />}
                       </div>
                       <div>
-                        <div className="text-white font-semibold text-base">
-                          {activity.activityType === 'referral_created' ? 'New Referral' :
+                        <div className="text-green-700 font-semibold text-base">
+                          {activity.activityType === 'tweet_verified' ? 'Tweet Verified' :
+                           activity.activityType === 'gitcoin_verified' ? 'Gitcoin Verified' :
                            activity.activityType === 'claim_submitted' ? 'Airdrop Claimed' :
+                           activity.activityType === 'referral_created' ? 'New Referral' :
                            activity.activityType === 'referral_reward' ? 'Referral Reward' :
                            activity.activityType === 'wallet_connected' ? 'Wallet Connected' :
                            'Activity'}
                         </div>
-                        <div className="text-slate-400 text-sm">{activity.description}</div>
+                        <div className="text-slate-600 text-sm">{activity.description}</div>
                       </div>
                     </div>
                     <div className="text-right">
@@ -530,16 +563,8 @@ export const DashboardContent = () => {
                       </div>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <TrendingUp className="h-8 w-8 text-slate-400" />
-                  </div>
-                  <p className="text-slate-400 text-lg">No activities yet</p>
-                  <p className="text-slate-500 text-sm">Your activities will appear here once you start using the platform</p>
-                </div>
-              )}
+                ));
+              })()}
             </div>
           </div>
         </div>

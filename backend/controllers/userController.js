@@ -37,13 +37,16 @@ const connectWallet = async (req, res) => {
       // Update existing user's connection
       await user.recordConnection();
       
-      // Record activity
-      await Activity.create({
-        user: user._id,
-        walletAddress: walletAddress.toLowerCase(),
-        activityType: 'wallet_connected',
-        description: 'Wallet reconnected'
-      });
+      // Only log wallet_connected if not already the last activity
+      const lastActivity = await Activity.findOne({ walletAddress: walletAddress.toLowerCase() }).sort({ occurredAt: -1 });
+      if (!lastActivity || lastActivity.activityType !== 'wallet_connected') {
+        await Activity.create({
+          user: user._id,
+          walletAddress: walletAddress.toLowerCase(),
+          activityType: 'wallet_connected',
+          description: 'Wallet reconnected'
+        });
+      }
 
       return res.status(200).json({
         success: true,
@@ -90,12 +93,15 @@ const connectWallet = async (req, res) => {
     }
 
     // Record activity
-    await Activity.create({
-      user: user._id,
-      walletAddress: user.walletAddress,
-      activityType: 'wallet_connected',
-      description: 'New wallet connected'
-    });
+    const lastActivity = await Activity.findOne({ walletAddress: user.walletAddress }).sort({ occurredAt: -1 });
+    if (!lastActivity || lastActivity.activityType !== 'wallet_connected') {
+      await Activity.create({
+        user: user._id,
+        walletAddress: user.walletAddress,
+        activityType: 'wallet_connected',
+        description: 'New wallet connected'
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -417,11 +423,38 @@ const fixReferralCodes = async (req, res) => {
   }
 };
 
+// @desc    Log Gitcoin Passport verification
+// @route   POST /api/users/log-gitcoin-verified
+// @access  Public
+const logGitcoinVerified = async (req, res) => {
+  try {
+    const { walletAddress } = req.body;
+    if (!walletAddress) {
+      return res.status(400).json({ success: false, message: 'Missing walletAddress' });
+    }
+    const user = await User.findByWalletAddress(walletAddress);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    await Activity.create({
+      user: user._id,
+      walletAddress: user.walletAddress,
+      activityType: 'gitcoin_verified',
+      description: 'Gitcoin Passport score verified for airdrop eligibility.'
+    });
+    res.status(201).json({ success: true, message: 'Gitcoin verification activity logged.' });
+  } catch (error) {
+    console.error('Error logging Gitcoin verification:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   connectWallet,
   getUserProfile,
   updateUserProfile,
   getUserActivities,
   getUserReferrals,
-  fixReferralCodes
+  fixReferralCodes,
+  logGitcoinVerified
 }; 
