@@ -4,6 +4,7 @@ const Activity = require('../models/Activity');
 const User = require('../models/User');
 require('dotenv').config();
 
+
 const predefinedText = 'Eth is Bullish..  Good for eth developers fam!';
 const campaignStart = new Date('2024-01-01'); // Adjust as needed
 
