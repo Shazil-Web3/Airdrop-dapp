@@ -2,7 +2,8 @@ import React from 'react';
 import { Twitter } from 'lucide-react';
 
 const TweetButton = ({ disabled }) => {
-  const tweetText = encodeURIComponent('Eth is Bullish..  Good for eth developers fam!');
+  const tweetText = encodeURIComponent('🚀 Just claimed my airdrop from the Hivox Airdrop dApp! 💰 Zero-knowledge verified, Sybil-resistant, and referral boosted! Join now and earn rewards 👉 https://hivox-airdrop.vercel.app #Airdrop #Crypto #zkProof #Hivox');
+
   const tweetUrl = `https://x.com/intent/tweet?text=${tweetText}`;
 
   return (

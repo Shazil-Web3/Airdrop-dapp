@@ -1,12 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { CheckCircle, Loader, AlertTriangle, XCircle, Clock } from 'lucide-react';
+import apiService from '../lib/api';
 
 const VerifyTweet = ({ walletAddress, onTaskComplete, disabled }) => {
   const [tweetUrl, setTweetUrl] = useState('');
   const [message, setMessage] = useState('');
   const [isVerified, setIsVerified] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      if (!walletAddress) return;
+      try {
+        const res = await apiService.checkTweetTaskStatus(walletAddress);
+        if (res.tweetTask?.completed) {
+          setIsVerified(true);
+          setMessage('Tweet verified successfully!');
+          if (onTaskComplete) onTaskComplete();
+        }
+      } catch (err) {
+        // Optionally handle error
+      }
+    };
+    checkStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [walletAddress]);
 
   const isValidTwitterUrl = (url) => {
     const twitterUrlPatterns = [

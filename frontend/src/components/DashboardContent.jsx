@@ -122,6 +122,19 @@ export const DashboardContent = () => {
     }
   }, [isConnected, address, user, loadUserData]);
 
+  useEffect(() => {
+    const checkTweetTask = async () => {
+      if (!address) return;
+      try {
+        const res = await apiService.checkTweetTaskStatus(address);
+        setTweetTaskCompleted(!!res.tweetTask?.completed);
+      } catch (err) {
+        setTweetTaskCompleted(false);
+      }
+    };
+    checkTweetTask();
+  }, [address]);
+
   const copyToClipboard = async () => {
     try {
       const success = await copyReferralLink();
@@ -197,6 +210,11 @@ export const DashboardContent = () => {
     await checkPassportScore();
     setGitcoinVerified(allowed);
     setGitcoinVerificationDisabled(false);
+  };
+
+  // Update tweetTaskCompleted when tweet is verified
+  const handleTweetVerified = () => {
+    setTweetTaskCompleted(true);
   };
 
   // Calculate user stats from real data
@@ -350,7 +368,7 @@ export const DashboardContent = () => {
         <DashboardTaskRoadmap
           walletAddress={address}
           tweetTaskCompleted={tweetTaskCompleted}
-          onTweetVerified={() => setTweetTaskCompleted(true)}
+          onTweetVerified={handleTweetVerified}
         />
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
@@ -526,15 +544,17 @@ export const DashboardContent = () => {
           </div>
         </div>
 
-        {/* Contract Tests */}
-        <div className="animate-fade-in mt-8" style={{ animationDelay: "0.7s" }}>
-          <ContractTestRunner />
-        </div>
+        
+          {/*
+       <div className="animate-fade-in mt-8" style={{ animationDelay: "0.7s" }}>
+  <ContractTestRunner />
+</div>
 
-        {/* Airdrop Funder */}
-        <div className="animate-fade-in mt-8" style={{ animationDelay: "0.8s" }}>
-          <AirdropFunder />
-        </div>
+<div className="animate-fade-in mt-8" style={{ animationDelay: "0.8s" }}>
+  <AirdropFunder /> 
+</div>
+*/}
+
       </div>
     </section>
   );

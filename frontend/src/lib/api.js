@@ -84,6 +84,11 @@ class ApiService {
       method: 'POST',
     });
   }
+
+  // Tweet Task
+  async checkTweetTaskStatus(walletAddress) {
+    return this.request(`/tweet-task/status?walletAddress=${walletAddress}`);
+  }
 }
 
 // Create a singleton instance
