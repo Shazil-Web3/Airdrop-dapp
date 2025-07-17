@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import apiService from '../lib/api';
 
@@ -179,14 +179,25 @@ export const useWallet = () => {
   }, [isConnected, address, loadUserData]);
 
   // Get referral link
+  const lastLogTimeRef = useRef(0);
   const getReferralLink = useCallback(() => {
-    console.log('🔗 Frontend: Getting referral link for user:', user);
+    const now = Date.now();
+    if (now - lastLogTimeRef.current > 10000) { // 10 seconds
+      console.log('🔗 Frontend: Getting referral link for user:', user);
+      lastLogTimeRef.current = now;
+    }
     if (!user?.referralCode) {
-      console.log('❌ Frontend: No referral code found for user');
+      if (now - lastLogTimeRef.current > 10000) {
+        console.log('❌ Frontend: No referral code found for user');
+        lastLogTimeRef.current = now;
+      }
       return null;
     }
     const link = `${window.location.origin}?ref=${user.referralCode}`;
-    console.log('✅ Frontend: Generated referral link:', link);
+    if (now - lastLogTimeRef.current > 10000) {
+      console.log('✅ Frontend: Generated referral link:', link);
+      lastLogTimeRef.current = now;
+    }
     return link;
   }, [user]);
 

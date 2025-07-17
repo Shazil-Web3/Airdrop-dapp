@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { CheckCircle, Loader } from 'lucide-react';
+import { CheckCircle, Loader, AlertTriangle, XCircle, Clock } from 'lucide-react';
 
 const VerifyTweet = ({ walletAddress, onTaskComplete, disabled }) => {
   const [tweetUrl, setTweetUrl] = useState('');
@@ -8,9 +8,26 @@ const VerifyTweet = ({ walletAddress, onTaskComplete, disabled }) => {
   const [isVerified, setIsVerified] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const isValidTwitterUrl = (url) => {
+    const twitterUrlPatterns = [
+      /^https?:\/\/(www\.)?(twitter\.com|x\.com)\/\w+\/status\/\d+/,
+      /^https?:\/\/(www\.)?(twitter\.com|x\.com)\/\w+\/status\/\d+\?/,
+      /^https?:\/\/(www\.)?(twitter\.com|x\.com)\/\w+\/status\/\d+\//
+    ];
+    return twitterUrlPatterns.some(pattern => pattern.test(url));
+  };
+
   const handleVerify = async () => {
     setLoading(true);
     setMessage('');
+    
+    // Frontend validation
+    if (!isValidTwitterUrl(tweetUrl)) {
+      setMessage('Please enter a valid Twitter/X.com status URL');
+      setLoading(false);
+      return;
+    }
+    
     try {
       console.log('Sending tweet verification request:', { tweetUrl, walletAddress });
       const response = await axios.post('http://localhost:5000/api/tweet-task/verify', { tweetUrl, walletAddress });
@@ -22,11 +39,18 @@ const VerifyTweet = ({ walletAddress, onTaskComplete, disabled }) => {
       }
     } catch (error) {
       console.error('Tweet verification error:', error);
-      if (error.response?.data?.details) {
-        setMessage((error.response.data.error || 'Verification failed') + ': ' + JSON.stringify(error.response.data.details));
-      } else {
-        setMessage(error.response?.data?.error || 'Verification failed');
+      let errorMessage = 'Verification failed';
+      
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+        if (error.response.data.details) {
+          errorMessage += ': ' + JSON.stringify(error.response.data.details);
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
       }
+      
+      setMessage(errorMessage);
     }
     setLoading(false);
   };
@@ -57,7 +81,38 @@ const VerifyTweet = ({ walletAddress, onTaskComplete, disabled }) => {
         {isVerified ? <CheckCircle className="h-5 w-5" /> : loading ? <Loader className="h-5 w-5 animate-spin" /> : null}
         {isVerified ? 'Tweet Verified' : loading ? 'Verifying...' : 'Verify Tweet'}
       </button>
-      {message && <p className={`mt-2 text-center text-sm ${isVerified ? 'text-green-400' : 'text-red-400'}`}>{message}</p>}
+      {message && (
+        <div className={`mt-3 w-full flex flex-col items-center`}>
+          {/* Success */}
+          {isVerified && (
+            <div className="flex items-center gap-2 bg-green-500/10 border border-green-400 text-green-400 rounded-lg px-4 py-2 text-sm font-medium">
+              <CheckCircle className="h-4 w-4" />
+              <span>{message}</span>
+            </div>
+          )}
+          {/* Rate limit exceeded */}
+          {!isVerified && message.toLowerCase().includes('rate limit') && (
+            <div className="flex items-center gap-2 bg-yellow-400/10 border border-yellow-400 text-yellow-500 rounded-lg px-4 py-2 text-sm font-medium">
+              <Clock className="h-4 w-4" />
+              <span>Rate limit exceeded. Please wait a few minutes and try again.</span>
+            </div>
+          )}
+          {/* Tweet not found or similar */}
+          {!isVerified && (message.toLowerCase().includes('not found') || message.toLowerCase().includes('no tweet')) && (
+            <div className="flex items-center gap-2 bg-red-500/10 border border-red-400 text-red-400 rounded-lg px-4 py-2 text-sm font-medium">
+              <XCircle className="h-4 w-4" />
+              <span>Tweet not found. Please check your link and try again.</span>
+            </div>
+          )}
+          {/* Generic error */}
+          {!isVerified && !message.toLowerCase().includes('rate limit') && !message.toLowerCase().includes('not found') && !message.toLowerCase().includes('no tweet') && (
+            <div className="flex items-center gap-2 bg-red-500/10 border border-red-400 text-red-400 rounded-lg px-4 py-2 text-sm font-medium">
+              <AlertTriangle className="h-4 w-4" />
+              <span>{message}</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

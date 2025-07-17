@@ -61,10 +61,11 @@ export default function AIChatWidget() {
       {!open && (
         <button
           aria-label="Open AI Chat"
-          
           onClick={() => setOpen(true)}
+          className="flex items-center gap-2"
         >
            {AI_AVATAR}
+           <span className="font-semibold text-base tracking-wide text-white-700 ml-4">AI Assistant</span>
         </button>
       )}
       {/* Chat Drop-up */}
