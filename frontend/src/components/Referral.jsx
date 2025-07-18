@@ -1,22 +1,30 @@
-import { Users, Target } from "lucide-react";
+import { Users, Target, Gift } from "lucide-react";
 
 export const ReferralSection = () => {
   const referralTiers = [
     {
       level: 1,
       title: "Direct Referrals",
-      percentage: "15%",
+      percentage: "10%",
       icon: Users,
-      description: "Earn 15% of rewards from users you directly refer",
+      description: "Earn 10% of rewards from users you directly refer",
       color: "from-accent to-primary"
     },
     {
       level: 2,
       title: "Second Level",
-      percentage: "8%",
+      percentage: "5%",
       icon: Target,
-      description: "Earn 8% from referrals made by your direct referrals",
+      description: "Earn 5% from referrals made by your direct referrals",
       color: "from-primary to-purple-500"
+    },
+    {
+      level: 3,
+      title: "Third Level",
+      percentage: "2%",
+      icon: Gift,
+      description: "Earn 2% from referrals made by your second level referrals",
+      color: "from-purple-500 to-pink-500"
     }
   ];
 
@@ -40,13 +48,13 @@ export const ReferralSection = () => {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+        <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 justify-center items-stretch">
           {referralTiers.map((tier, index) => {
             const IconComponent = tier.icon;
             return (
               <div 
                 key={tier.level}
-                className="relative bg-slate-800 border border-slate-700 rounded-lg p-6 hover:bg-slate-700 transition-all duration-300 hover:scale-105 animate-slide-up shadow-lg"
+                className="flex-1 max-w-[420px] min-w-[260px] bg-slate-800 border border-slate-700 rounded-xl p-6 hover:bg-slate-700 transition-all duration-300 hover:scale-105 animate-slide-up shadow-xl flex flex-col mx-auto"
                 style={{ animationDelay: `${index * 0.2}s` }}
               >
                 <div className="text-center pb-4">
@@ -58,7 +66,7 @@ export const ReferralSection = () => {
                   </span>
                   <h3 className="text-xl font-semibold text-white mb-2">{tier.title}</h3>
                 </div>
-                <div className="text-center">
+                <div className="text-center flex-1 flex flex-col justify-center">
                   <div className="text-4xl font-bold text-purple-400 mb-4">
                     {tier.percentage}
                   </div>

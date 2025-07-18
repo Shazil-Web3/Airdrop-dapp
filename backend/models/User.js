@@ -20,10 +20,10 @@ const userSchema = new mongoose.Schema({
   referralCode: {
     type: String,
     unique: true,
-    uppercase: true,
+    lowercase: true,
     trim: true,
     minlength: 6,
-    maxlength: 10
+    maxlength: 42 // 42 for Ethereum address
   },
   
   referrerAddress: {
@@ -149,8 +149,8 @@ userSchema.index({ createdAt: -1 });
 
 // Virtual for referral link
 userSchema.virtual('referralLink').get(function() {
-  if (this.referralCode) {
-    return `${process.env.FRONTEND_URL || 'http://localhost:3000'}?ref=${this.referralCode}`;
+  if (this.walletAddress) {
+    return `${process.env.FRONTEND_URL || 'http://localhost:3000'}?ref=${this.walletAddress}`;
   }
   return null;
 });
@@ -160,45 +160,14 @@ userSchema.virtual('totalReferralRewards').get(function() {
   return this.referralRewards.total;
 });
 
-// Pre-save middleware to generate referral code if not exists
+// Pre-save middleware to set referral code as wallet address
 userSchema.pre('save', async function(next) {
-  // Generate referral code if user doesn't have one (for both new and existing users)
-  if (!this.referralCode) {
-    console.log('🔄 Backend: Generating referral code for user:', this.walletAddress);
-    this.referralCode = await this.generateUniqueReferralCode();
-    console.log('✅ Backend: Generated referral code:', this.referralCode);
+  if (!this.referralCode || this.referralCode !== this.walletAddress) {
+    this.referralCode = this.walletAddress;
   }
-  
-  // Update lastActivity
   this.updatedAt = new Date();
-  
   next();
 });
-
-// Method to generate unique referral code
-userSchema.methods.generateUniqueReferralCode = async function() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let attempts = 0;
-  const maxAttempts = 10;
-  
-  while (attempts < maxAttempts) {
-    let result = '';
-    for (let i = 0; i < 8; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    
-    // Check if this referral code already exists
-    const existingUser = await this.constructor.findOne({ referralCode: result });
-    if (!existingUser) {
-      return result;
-    }
-    
-    attempts++;
-  }
-  
-  // If we can't generate a unique code after max attempts, throw an error
-  throw new Error('Unable to generate unique referral code');
-};
 
 // Method to record connection
 userSchema.methods.recordConnection = function() {

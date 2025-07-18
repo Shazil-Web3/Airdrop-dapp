@@ -25,12 +25,9 @@ const connectWallet = async (req, res) => {
     let user = await User.findByWalletAddress(walletAddress);
 
     if (user) {
-      // Check if user has a referral code, if not generate one
-      if (!user.referralCode) {
-        console.log('🔄 Backend: Generating referral code for existing user:', user.walletAddress);
-        user.referralCode = await user.generateUniqueReferralCode();
-        console.log('✅ Backend: Generated referral code for existing user:', user.referralCode);
-        // Save the user to persist the referral code
+      // No need to generate referral code, always wallet address
+      if (!user.referralCode || user.referralCode !== user.walletAddress) {
+        user.referralCode = user.walletAddress;
         await user.save();
       }
       
@@ -69,12 +66,13 @@ const connectWallet = async (req, res) => {
 
     // Create new user
     const userData = {
-      walletAddress: walletAddress.toLowerCase()
+      walletAddress: walletAddress.toLowerCase(),
+      referralCode: walletAddress.toLowerCase()
     };
 
     // Handle referral if provided
     if (referralCode) {
-      const referrer = await User.findByReferralCode(referralCode);
+      const referrer = await User.findByWalletAddress(referralCode.toLowerCase());
       if (referrer && referrer.walletAddress !== walletAddress.toLowerCase()) {
         userData.referrerAddress = referrer.walletAddress;
       }

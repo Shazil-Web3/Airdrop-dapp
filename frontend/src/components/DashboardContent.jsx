@@ -15,7 +15,9 @@ import {
   Gift,
   Link as LinkIcon,
   ExternalLink,
-  Loader
+  Loader,
+  AlertTriangle,
+  XCircle
 } from "lucide-react";
 import { useAccount } from 'wagmi';
 import { CustomConnectButton } from './CustomConnectButton.jsx';
@@ -38,6 +40,10 @@ export const DashboardContent = () => {
   const [tweetTaskCompleted, setTweetTaskCompleted] = useState(false);
   const [gitcoinVerified, setGitcoinVerified] = useState(false);
   const [gitcoinVerificationDisabled, setGitcoinVerificationDisabled] = useState(false);
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const [referralInput, setReferralInput] = useState("");
+  const [referralSubmitted, setReferralSubmitted] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   
   // Use the new AirdropContext
   const {
@@ -184,10 +190,36 @@ export const DashboardContent = () => {
     if (address) checkPassportScore();
   }, [address]);
 
+  // Show referral modal only once per user (localStorage)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isConnected && address) {
+      const seen = localStorage.getItem(`seenReferralModal_${address}`);
+      if (!seen) {
+        setShowReferralModal(true);
+      }
+    }
+  }, [isConnected, address]);
+
+  const handleReferralSubmit = () => {
+    if (referralInput.trim()) {
+      localStorage.setItem(`userReferralCode_${address}`, referralInput.trim());
+      localStorage.setItem(`seenReferralModal_${address}`, '1');
+      setShowReferralModal(false);
+      setReferralSubmitted(true);
+    }
+  };
+  const handleNoReferral = () => {
+    localStorage.setItem(`userReferralCode_${address}`, '');
+    localStorage.setItem(`seenReferralModal_${address}`, '1');
+    setShowReferralModal(false);
+    setReferralSubmitted(true);
+  };
+
   // Handle airdrop claim
   const handleClaimAirdrop = async () => {
     try {
-      await claimAirdrop();
+      let referralCode = localStorage.getItem(`userReferralCode_${address}`) || undefined;
+      await claimAirdrop(referralCode);
       // Refresh contract state after claiming
       if (loadContractState) {
         await loadContractState();
@@ -239,6 +271,33 @@ export const DashboardContent = () => {
   // Get claimable amount from context
   const claimableAmount = getClaimableAmount();
 
+  useEffect(() => {
+    const timer = setTimeout(() => setInitialLoading(false), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (initialLoading) {
+    return (
+      <section className="relative overflow-hidden px-4 sm:px-6 py-16 lg:py-24 min-h-screen flex items-center justify-center">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-purple-950 to-black"></div>
+        <div className="relative z-10 flex flex-col items-center justify-center gap-6">
+          <div className="w-24 h-24 flex items-center justify-center">
+            <svg className="animate-spin-slow" width="96" height="96" viewBox="0 0 96 96" fill="none">
+              <circle cx="48" cy="48" r="40" stroke="#a855f7" strokeWidth="8" strokeDasharray="60 100" strokeLinecap="round" />
+              <circle cx="48" cy="48" r="32" stroke="#06b6d4" strokeWidth="6" strokeDasharray="40 80" strokeLinecap="round" opacity="0.7" />
+            </svg>
+          </div>
+          <p className="text-slate-300 text-lg">Loading your dashboard...</p>
+          <style jsx global>{`
+            .animate-spin-slow {
+              animation: spin 1.5s linear infinite;
+            }
+          `}</style>
+        </div>
+      </section>
+    );
+  }
+
   if (!isConnected) {
     return (
       <section className="relative overflow-hidden px-4 sm:px-6 py-16 lg:py-24 min-h-screen flex items-center justify-center">
@@ -276,9 +335,19 @@ export const DashboardContent = () => {
     return (
       <section className="relative overflow-hidden px-4 sm:px-6 py-16 lg:py-24 min-h-screen flex items-center justify-center">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-purple-950 to-black"></div>
-        <div className="relative z-10 text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-500 mx-auto mb-4"></div>
+        <div className="relative z-10 flex flex-col items-center justify-center gap-6">
+          <div className="w-24 h-24 flex items-center justify-center">
+            <svg className="animate-spin-slow" width="96" height="96" viewBox="0 0 96 96" fill="none">
+              <circle cx="48" cy="48" r="40" stroke="#a855f7" strokeWidth="8" strokeDasharray="60 100" strokeLinecap="round" />
+              <circle cx="48" cy="48" r="32" stroke="#06b6d4" strokeWidth="6" strokeDasharray="40 80" strokeLinecap="round" opacity="0.7" />
+            </svg>
+          </div>
           <p className="text-slate-300 text-lg">Loading your dashboard...</p>
+          <style jsx global>{`
+            .animate-spin-slow {
+              animation: spin 1.5s linear infinite;
+            }
+          `}</style>
         </div>
       </section>
     );
@@ -288,13 +357,16 @@ export const DashboardContent = () => {
     return (
       <section className="relative overflow-hidden px-4 sm:px-6 py-16 lg:py-24 min-h-screen flex items-center justify-center">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-purple-950 to-black"></div>
-        <div className="relative z-10 text-center">
-          <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-6 mb-4">
-            <p className="text-red-400 text-lg mb-4">Error loading dashboard</p>
-            <p className="text-slate-400 text-sm mb-4">{error}</p>
+        <div className="relative z-10 flex flex-col items-center justify-center gap-6">
+          <div className="w-20 h-20 flex items-center justify-center bg-red-500/10 rounded-full shadow-2xl mb-4">
+            <AlertTriangle className="h-12 w-12 text-red-500" />
+          </div>
+          <div className="bg-white/10 rounded-2xl p-8 shadow-2xl max-w-md w-full text-center">
+            <h2 className="text-2xl font-bold text-red-500 mb-2 flex items-center justify-center gap-2"><XCircle className="h-6 w-6" /> Error loading dashboard</h2>
+            <p className="text-slate-400 text-base mb-4">{error}</p>
             <button 
               onClick={refreshData}
-              className="bg-gradient-to-r from-purple-500 to-cyan-600 text-white px-6 py-2 rounded-lg hover:from-purple-600 hover:to-cyan-700 transition-all duration-300"
+              className="bg-gradient-to-r from-purple-500 to-cyan-600 text-white px-6 py-2 rounded-lg hover:from-purple-600 hover:to-cyan-700 transition-all duration-300 shadow-lg font-semibold"
             >
               Retry
             </button>
@@ -335,43 +407,8 @@ export const DashboardContent = () => {
           </p>
         </div>
 
-        {/* Stats Grid */}
-        <div className="flex justify-center mb-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl">
-            <div className="group animate-fade-in bg-gradient-to-br from-slate-900/90 to-slate-800/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 shadow-2xl hover:shadow-purple-500/10 transition-all duration-500 hover:scale-105 hover:border-purple-500/30">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-purple-500/25 transition-all duration-300">
-                  <Coins className="h-5 w-5 text-white" />
-                </div>
-                <ExternalLink className="h-4 w-4 text-slate-400 group-hover:text-purple-400 transition-colors duration-300" />
-              </div>
-              <div className="text-2xl font-bold text-white mb-1">{userStats.claimedAmount.toLocaleString()}</div>
-              <div className="text-slate-400 text-sm font-medium">Claimed Airdrop</div>
-            </div>
-
-            <div className="group animate-fade-in bg-gradient-to-br from-slate-900/90 to-slate-800/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 shadow-2xl hover:shadow-cyan-500/10 transition-all duration-500 hover:scale-105 hover:border-cyan-500/30" style={{ animationDelay: "0.1s" }}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-cyan-500/25 transition-all duration-300">
-                  <Users className="h-5 w-5 text-white" />
-                </div>
-                <ExternalLink className="h-4 w-4 text-slate-400 group-hover:text-cyan-400 transition-colors duration-300" />
-              </div>
-              <div className="text-2xl font-bold text-white mb-1">{userStats.totalReferrals.toLocaleString()}</div>
-              <div className="text-slate-400 text-sm font-medium">Total Referrals</div>
-            </div>
-
-            <div className="group animate-fade-in bg-gradient-to-br from-slate-900/90 to-slate-800/70 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50 shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:scale-105 hover:border-blue-500/30" style={{ animationDelay: "0.2s" }}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-blue-500/25 transition-all duration-300">
-                  <TrendingUp className="h-5 w-5 text-white" />
-                </div>
-                <ExternalLink className="h-4 w-4 text-slate-400 group-hover:text-blue-400 transition-colors duration-300" />
-              </div>
-              <div className="text-2xl font-bold text-white mb-1">{userStats.activeReferrals.toLocaleString()}</div>
-              <div className="text-slate-400 text-sm font-medium">Active Referrals</div>
-            </div>
-          </div>
-        </div>
+       
+        
 
         {/* Task Roadmap Grid */}
         <DashboardTaskRoadmap

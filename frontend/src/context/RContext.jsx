@@ -228,7 +228,7 @@ export const AirdropProvider = ({ children }) => {
     };
 
     // Claim airdrop
-    const claimAirdrop = async () => {
+    const claimAirdrop = async (referrerAddress) => {
         console.log("[claimAirdrop] Called");
         if (!window.ethereum) {
             toast.error("No Ethereum provider found. Please install MetaMask or another Web3 wallet.");
@@ -315,8 +315,11 @@ export const AirdropProvider = ({ children }) => {
 
         try {
             const claimAmount = 100; // Fixed amount of 100 tokens
-            // No referrer logic, always use zero address
-            const referrer = ethers.ZeroAddress;
+            // Use referrer address if provided, else zero address
+            let referrer = ethers.ZeroAddress;
+            if (referrerAddress && /^0x[a-fA-F0-9]{40}$/.test(referrerAddress)) {
+                referrer = referrerAddress;
+            }
 
             console.log("[claimAirdrop] Preparing to claim airdrop:", {
                 userAddress,
