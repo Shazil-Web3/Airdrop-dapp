@@ -457,6 +457,4 @@ MIT License - see LICENSE file for details
 5. Submit a pull request
 
 
-**Built with ❤️ by the Hivox Team**
-
 *This project represents a complete, production-ready Web3 airdrop platform with advanced features including AI integration, social media verification, Sybil resistance, and comprehensive testing.* 
